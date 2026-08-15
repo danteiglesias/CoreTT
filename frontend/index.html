@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoreTT - Plataforma de Guías de Videojuegos</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">CoreTT</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Inicio</a></li>
+                <li><a href="pages/guides.html">Guías</a></li>
+                <li><a href="pages/forum.html">Foro</a></li>
+                <li><a href="pages/profile.html" id="profileLink" style="display:none;">Perfil</a></li>
+                <li><a href="#" id="loginBtn">Iniciar Sesión</a></li>
+                <li><a href="#" id="logoutBtn" style="display:none;">Cerrar Sesión</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>CoreTT</h1>
+            <p>La comunidad definitiva para guías y consejos de videojuegos</p>
+            <button class="btn btn-primary" id="getStartedBtn">Comenzar</button>
+        </div>
+    </section>
+
+    <!-- Contenido Principal -->
+    <main class="container">
+        <section class="featured-guides">
+            <h2>Guías Destacadas</h2>
+            <div class="guides-grid" id="guidesContainer">
+                <!-- Las guías se cargarán dinámicamente aquí -->
+            </div>
+        </section>
+
+        <section class="recent-posts">
+            <h2>Posts Recientes del Foro</h2>
+            <div class="posts-list" id="postsContainer">
+                <!-- Los posts se cargarán dinámicamente aquí -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 CoreTT. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Contraseña" required>
+                <button type="submit" class="btn btn-primary">Entrar</button>
+            </form>
+            <p>¿No tienes cuenta? <a href="#" id="signupLink">Regístrate</a></p>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
