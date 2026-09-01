@@ -122,7 +122,6 @@ section h2 {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 2rem;
 }
-<<<<<<< HEAD
 .guides-grid img {
     width: 100%;
     height: auto;
@@ -131,8 +130,6 @@ section h2 {
     display: block;
 }
 
-=======
->>>>>>> 2308797773c74aba47f5fbc41bb1fd2085fea38b
 
 .guide-card {
     background: white;
