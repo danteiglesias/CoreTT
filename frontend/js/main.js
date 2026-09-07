@@ -3,31 +3,11 @@
  * Inicialización de la página: carga dinámica de contenido, menú móvil y handlers.
  */
 document.addEventListener('DOMContentLoaded', () => {
-    initNavbar();
     initGetStarted();
     loadGuides();
     loadPosts();
     Auth.init();
 });
-
-/* ---------- Navbar / Menú móvil ---------- */
-function initNavbar() {
-    const toggle = document.getElementById('navToggle');
-    const navLinks = document.getElementById('navLinks');
-
-    if (toggle && navLinks) {
-        toggle.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-
-        // Cerrar menú al hacer clic en un enlace
-        navLinks.querySelectorAll('a').forEach((link) => {
-            link.addEventListener('click', () => {
-                navLinks.classList.remove('active');
-            });
-        });
-    }
-}
 
 /* ---------- Botón "Comenzar" ---------- */
 function initGetStarted() {
@@ -114,6 +94,7 @@ async function loadPosts() {
             posts.forEach((post) => {
                 const item = document.createElement('div');
                 item.className = 'post-item';
+                item.title = 'Ver en el foro';
                 item.innerHTML = `
                     <h3>${escapeHtml(post.title)}</h3>
                     <p>${escapeHtml(post.excerpt || '')}</p>
@@ -121,6 +102,9 @@ async function loadPosts() {
                         ${escapeHtml(post.author)} &middot; ${escapeHtml(post.date || '')}
                     </div>
                 `;
+                item.addEventListener('click', () => {
+                    window.location.href = 'pages/forum.html';
+                });
                 container.appendChild(item);
             });
         }

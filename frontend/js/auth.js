@@ -18,8 +18,54 @@ const Auth = (() => {
             }
         }
 
+        bindNavbar();
         bindModalEvents();
         updateUI();
+    }
+
+    /* ---------- Menú móvil ---------- */
+    function bindNavbar() {
+        const toggle = document.getElementById('navToggle');
+        const navLinks = document.getElementById('navLinks');
+
+        if (toggle && navLinks) {
+            toggle.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+            });
+
+            navLinks.querySelectorAll('a').forEach((link) => {
+                link.addEventListener('click', () => {
+                    navLinks.classList.remove('active');
+                });
+            });
+        }
+    }
+
+    /**
+     * Comprueba si hay sesión; si no, abre el modal de login.
+     * @returns {boolean} true si está autenticado
+     */
+    function requireAuth() {
+        if (isLoggedIn()) return true;
+        openModal('loginModal');
+        return false;
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'none';
+            // Limpiar errores anteriores
+            const error = modal.querySelector('.form-error');
+            if (error) error.textContent = '';
+        }
     }
 
     function getToken() {
@@ -90,23 +136,6 @@ const Auth = (() => {
                 closeModal(e.target.id);
             }
         });
-    }
-
-    function openModal(id) {
-        const modal = document.getElementById(id);
-        if (modal) {
-            modal.style.display = 'block';
-        }
-    }
-
-    function closeModal(id) {
-        const modal = document.getElementById(id);
-        if (modal) {
-            modal.style.display = 'none';
-            // Limpiar errores anteriores
-            const error = modal.querySelector('.form-error');
-            if (error) error.textContent = '';
-        }
     }
 
     function showError(form, message) {
@@ -189,6 +218,9 @@ const Auth = (() => {
         getToken,
         getCurrentUser,
         isLoggedIn,
+        requireAuth,
+        openModal,
+        closeModal,
         setSession,
         logout
     };

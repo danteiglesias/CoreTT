@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoreTT - Guías</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">CoreTT</div>
+            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">&#9776;</button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="../index.html">Inicio</a></li>
+                <li><a href="guides.html">Guías</a></li>
+                <li><a href="forum.html">Foro</a></li>
+                <li><a href="profile.html" id="profileLink" style="display:none;">Perfil</a></li>
+                <li><a href="#" id="loginBtn">Iniciar Sesión</a></li>
+                <li><a href="#" id="logoutBtn" style="display:none;">Cerrar Sesión</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section>
+            <h2 class="section-title">Guías de la Comunidad</h2>
+            <div class="alert alert-info">
+                Explora las guías de estrategia, lineups y análisis del meta. Vota las que te sirvan para que la comunidad las destaque.
+            </div>
+
+            <div class="filter-bar">
+                <button class="filter-btn active" data-game="Todos">Todos</button>
+                <button class="filter-btn" data-game="League of Legends">LoL</button>
+                <button class="filter-btn" data-game="Counter-Strike 2">CS2</button>
+                <button class="filter-btn" data-game="Fortnite">Fortnite</button>
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar guías...">
+                <button class="btn btn-accent" id="createGuideBtn">+ Nueva Guía</button>
+            </div>
+
+            <div class="guides-grid" id="guidesContainer"></div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 CoreTT. Todos los derechos reservados.</p>
+    </footer>
+
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="loginModal">&times;</span>
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <div id="loginError" class="form-error"></div>
+                <button type="submit" class="btn btn-primary">Entrar</button>
+            </form>
+            <p>¿No tienes cuenta? <a href="#" id="signupLink">Regístrate</a></p>
+        </div>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="signupModal">&times;</span>
+            <h2>Registrarse</h2>
+            <form id="signupForm">
+                <input type="text" id="signupName" placeholder="Nombre de usuario" required>
+                <input type="email" id="signupEmail" placeholder="Email" required>
+                <input type="password" id="signupPassword" placeholder="Contraseña" required>
+                <div id="signupError" class="form-error"></div>
+                <button type="submit" class="btn btn-primary">Crear cuenta</button>
+            </form>
+            <p>¿Ya tienes cuenta? <a href="#" id="loginLink">Inicia sesión</a></p>
+        </div>
+    </div>
+
+    <!-- Modal Nueva Guía -->
+    <div id="newGuideModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="newGuideModal">&times;</span>
+            <h2>Publicar Nueva Guía</h2>
+            <form id="newGuideForm">
+                <input type="text" id="guideTitle" placeholder="Título de la guía" required>
+                <select id="guideGame" required>
+                    <option value="">Selecciona el juego</option>
+                    <option value="League of Legends">League of Legends</option>
+                    <option value="Counter-Strike 2">Counter-Strike 2</option>
+                    <option value="Fortnite">Fortnite</option>
+                </select>
+                <textarea id="guideDescription" placeholder="Breve descripción" required></textarea>
+                <textarea id="guideContent" placeholder="Contenido completo de la guía" required></textarea>
+                <div id="guideError" class="form-error"></div>
+                <button type="submit" class="btn btn-primary">Publicar</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/guides.js"></script>
+</body>
+</html>

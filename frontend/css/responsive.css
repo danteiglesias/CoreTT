@@ -1,42 +1,10 @@
 /* ============================================
-   CoreTT - Estilos responsive y auxiliares
+   CoreTT - Estilos responsive
    ============================================ */
 
 /* Botón hamburguesa (oculto en desktop) */
 .nav-toggle {
     display: none;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 2rem;
-    cursor: pointer;
-    line-height: 1;
-}
-
-/* Auxiliares de contenido */
-.guide-meta {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-    font-size: 0.85rem;
-    color: #999;
-}
-
-.guide-author {
-    color: var(--primary-color);
-    font-weight: 600;
-}
-
-.guide-votes {
-    margin-left: auto;
-    color: var(--success-color);
-    font-weight: 600;
-}
-
-.form-error {
-    color: var(--danger-color);
-    font-size: 0.9rem;
-    min-height: 1rem;
 }
 
 /* ============================================
@@ -46,11 +14,21 @@
 /* Tablets y pantallas medianas */
 @media (max-width: 900px) {
     .hero {
-        padding: 4rem 1.5rem;
+        padding: 4.5rem 1.5rem;
     }
 
     .hero-content h1 {
-        font-size: 2.5rem;
+        font-size: 2.6rem;
+    }
+
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-input {
+        flex: none;
+        width: 100%;
     }
 }
 
@@ -58,19 +36,21 @@
 @media (max-width: 600px) {
     .navbar .container {
         flex-wrap: wrap;
+        position: relative;
     }
 
     .nav-toggle {
         display: block;
+        margin-left: auto;
     }
 
     .nav-links {
         display: none;
         flex-direction: column;
         width: 100%;
-        gap: 0.5rem;
-        padding: 1rem 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        gap: 0.4rem;
+        padding: 1rem 0 0.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .nav-links.active {
@@ -84,12 +64,17 @@
 
     .nav-links li a {
         display: block;
-        padding: 0.7rem 0;
+        padding: 0.65rem 0;
+        border-radius: 10px;
     }
 
     .nav-links li a:hover {
-        background: rgba(126, 0, 243, 0.2);
+        background: rgba(139, 92, 246, 0.15);
         color: white;
+    }
+
+    .nav-links li a::after {
+        display: none;
     }
 
     .hero {
@@ -101,20 +86,56 @@
     }
 
     .hero-content p {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
     }
 
     .guides-grid {
         grid-template-columns: 1fr;
     }
 
+    .section-title,
     section h2 {
-        font-size: 1.6rem;
+        font-size: 1.55rem;
     }
 
     .modal-content {
-        width: 95%;
+        width: 94%;
         padding: 1.5rem;
-        margin: 15% auto;
+        margin: 12% auto;
+    }
+
+    .profile-card {
+        padding: 1.8rem 1.2rem;
+    }
+
+    .stats-grid,
+    .profile-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .post-detail {
+        padding: 1.4rem;
+    }
+
+    .post-item {
+        padding: 1.1rem 1.2rem;
+    }
+
+    .admin-panel {
+        padding: 1rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.7rem 0.7rem;
+    }
+
+    .btn {
+        width: auto;
+    }
+
+    .btn-block-mobile {
+        display: block;
+        width: 100%;
     }
 }
