@@ -12,7 +12,8 @@
     <nav class="navbar">
         <div class="container">
             <div class="logo">CoreTT</div>
-            <ul class="nav-links">
+            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">&#9776;</button>
+            <ul class="nav-links" id="navLinks">
                 <li><a href="index.html">Inicio</a></li>
                 <li><a href="pages/guides.html">Guías</a></li>
                 <li><a href="pages/forum.html">Foro</a></li>
@@ -38,7 +39,6 @@
             <h2>Guías Destacadas</h2>
             <div class="guides-grid" id="guidesContainer">
                 <!-- Las guías se cargarán dinámicamente aquí -->
-<<<<<<< HEAD
                 <a href="pages/guides.html" class="guide-link">
                      <img src="assets/Counter Strike 2.png" alt="Counter Strike 2">
                 </a>
@@ -49,9 +49,6 @@
                     <img src="assets/Fortnite.png" alt="Fortnite">
                 </a>
              </div>
-=======
-            </div>
->>>>>>> 2308797773c74aba47f5fbc41bb1fd2085fea38b
         </section>
 
         <section class="recent-posts">
@@ -70,14 +67,31 @@
     <!-- Modal de Login -->
     <div id="loginModal" class="modal">
         <div class="modal-content">
-            <span class="close">&times;</span>
+            <span class="close" data-close="loginModal">&times;</span>
             <h2>Iniciar Sesión</h2>
             <form id="loginForm">
-                <input type="email" placeholder="Email" required>
-                <input type="password" placeholder="Contraseña" required>
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <div id="loginError" class="form-error"></div>
                 <button type="submit" class="btn btn-primary">Entrar</button>
             </form>
             <p>¿No tienes cuenta? <a href="#" id="signupLink">Regístrate</a></p>
+        </div>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="signupModal">&times;</span>
+            <h2>Registrarse</h2>
+            <form id="signupForm">
+                <input type="text" id="signupName" placeholder="Nombre de usuario" required>
+                <input type="email" id="signupEmail" placeholder="Email" required>
+                <input type="password" id="signupPassword" placeholder="Contraseña" required>
+                <div id="signupError" class="form-error"></div>
+                <button type="submit" class="btn btn-primary">Crear cuenta</button>
+            </form>
+            <p>¿Ya tienes cuenta? <a href="#" id="loginLink">Inicia sesión</a></p>
         </div>
     </div>
 

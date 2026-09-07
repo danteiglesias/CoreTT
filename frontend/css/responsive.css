@@ -1,0 +1,120 @@
+/* ============================================
+   CoreTT - Estilos responsive y auxiliares
+   ============================================ */
+
+/* Botón hamburguesa (oculto en desktop) */
+.nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* Auxiliares de contenido */
+.guide-meta {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.guide-author {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.guide-votes {
+    margin-left: auto;
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+.form-error {
+    color: var(--danger-color);
+    font-size: 0.9rem;
+    min-height: 1rem;
+}
+
+/* ============================================
+   Media Queries
+   ============================================ */
+
+/* Tablets y pantallas medianas */
+@media (max-width: 900px) {
+    .hero {
+        padding: 4rem 1.5rem;
+    }
+
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+}
+
+/* Móviles */
+@media (max-width: 600px) {
+    .navbar .container {
+        flex-wrap: wrap;
+    }
+
+    .nav-toggle {
+        display: block;
+    }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+        padding: 1rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+
+    .nav-links li {
+        width: 100%;
+        text-align: center;
+    }
+
+    .nav-links li a {
+        display: block;
+        padding: 0.7rem 0;
+    }
+
+    .nav-links li a:hover {
+        background: rgba(126, 0, 243, 0.2);
+        color: white;
+    }
+
+    .hero {
+        padding: 3rem 1rem;
+    }
+
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+
+    .hero-content p {
+        font-size: 1.1rem;
+    }
+
+    .guides-grid {
+        grid-template-columns: 1fr;
+    }
+
+    section h2 {
+        font-size: 1.6rem;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 1.5rem;
+        margin: 15% auto;
+    }
+}
