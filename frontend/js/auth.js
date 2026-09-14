@@ -176,10 +176,15 @@ const Auth = (() => {
             showError(e.target, '');
             const result = await API.register(name, email, password);
 
-            if (result.success) {
+if (result.success) {
                 closeModal('signupModal');
                 e.target.reset();
-                alert(result.message || 'Cuenta creada correctamente. Ahora puedes iniciar sesión.');
+                const message = result.message || 'Cuenta creada correctamente. Ahora puedes iniciar sesion.';
+                if (window.Core) {
+                    Core.notify(message, 'success');
+                } else {
+                    alert(message);
+                }
             } else {
                 showError(e.target, result.message || 'No se pudo crear la cuenta');
             }
@@ -196,10 +201,15 @@ const Auth = (() => {
     }
 
     function logout() {
+        // Intenta invalidar la sesion en el servidor (best-effort)
+        if (window.API && API.logout) {
+            API.logout().catch(() => {});
+        }
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
         currentUser = null;
         updateUI();
+        if (window.Core) Core.notify('Sesion cerrada');
     }
 
     function updateUI() {

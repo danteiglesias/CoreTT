@@ -1,0 +1,45 @@
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: corett
+      MYSQL_USER: corett
+      MYSQL_PASSWORD: corett
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/datos_iniciales.sql:/docker-entrypoint-initdb.d/02-datos.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: corett
+      DB_USER: corett
+      DB_PASSWORD: corett
+      DB_CHARSET: utf8mb4
+      APP_ENV: development
+      ALLOWED_ORIGIN: "*"
+      SESSION_TTL_DAYS: "7"
+      ADMIN_EMAIL: admin@corett.com
+      ADMIN_PASSWORD: admin1234
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dbdata:

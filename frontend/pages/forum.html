@@ -8,68 +8,23 @@
     <link rel="stylesheet" href="../css/responsive.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <div class="logo">CoreTT</div>
-            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">&#9776;</button>
-            <ul class="nav-links" id="navLinks">
-                <li><a href="../index.html">Inicio</a></li>
-                <li><a href="guides.html">Guías</a></li>
-                <li><a href="forum.html">Foro</a></li>
-                <li><a href="profile.html" id="profileLink" style="display:none;">Perfil</a></li>
-                <li><a href="#" id="loginBtn">Iniciar Sesión</a></li>
-                <li><a href="#" id="logoutBtn" style="display:none;">Cerrar Sesión</a></li>
-            </ul>
-        </div>
-    </nav>
-
     <main class="container">
         <section>
             <div class="filter-bar" style="border:none; padding:0; margin-bottom:0;">
                 <div>
-                    <h2 class="section-title" id="forumTitle">Foro de Discusión</h2>
+                    <h2 class="section-title" id="forumTitle">Foro de Discusion</h2>
                 </div>
+                <input type="text" id="forumSearch" class="search-input" placeholder="Buscar en el foro...">
                 <button class="btn btn-accent" id="createPostBtn">+ Nuevo Post</button>
             </div>
 
             <div class="posts-list" id="postsContainer"></div>
+
+            <div class="text-center mt-1">
+                <button class="btn btn-secondary" id="loadMorePostsBtn" style="display:none;">Cargar mas</button>
+            </div>
         </section>
     </main>
-
-    <footer class="footer">
-        <p>&copy; 2026 CoreTT. Todos los derechos reservados.</p>
-    </footer>
-
-    <!-- Modal de Login -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close" data-close="loginModal">&times;</span>
-            <h2>Iniciar Sesión</h2>
-            <form id="loginForm">
-                <input type="email" id="loginEmail" placeholder="Email" required>
-                <input type="password" id="loginPassword" placeholder="Contraseña" required>
-                <div id="loginError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Entrar</button>
-            </form>
-            <p>¿No tienes cuenta? <a href="#" id="signupLink">Regístrate</a></p>
-        </div>
-    </div>
-
-    <!-- Modal de Registro -->
-    <div id="signupModal" class="modal">
-        <div class="modal-content">
-            <span class="close" data-close="signupModal">&times;</span>
-            <h2>Registrarse</h2>
-            <form id="signupForm">
-                <input type="text" id="signupName" placeholder="Nombre de usuario" required>
-                <input type="email" id="signupEmail" placeholder="Email" required>
-                <input type="password" id="signupPassword" placeholder="Contraseña" required>
-                <div id="signupError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Crear cuenta</button>
-            </form>
-            <p>¿Ya tienes cuenta? <a href="#" id="loginLink">Inicia sesión</a></p>
-        </div>
-    </div>
 
     <!-- Modal Nuevo Post -->
     <div id="newPostModal" class="modal">
@@ -77,14 +32,16 @@
             <span class="close" data-close="newPostModal">&times;</span>
             <h2>Crear Nuevo Post</h2>
             <form id="newPostForm">
-                <input type="text" id="postTitle" placeholder="Título del post" required>
-                <textarea id="postBody" placeholder="Contenido de tu publicación" required></textarea>
+                <input type="text" id="postTitle" placeholder="Titulo del post" required>
+                <textarea id="postBody" placeholder="Contenido de tu publicacion" required></textarea>
                 <div id="postError" class="form-error"></div>
                 <button type="submit" class="btn btn-primary">Publicar</button>
             </form>
         </div>
     </div>
 
+    <script src="../js/core.js"></script>
+    <script src="../js/layout.js"></script>
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/forum.js"></script>

@@ -1,15 +1,15 @@
 /**
- * CoreTT - Main
- * Inicialización de la página: carga dinámica de contenido, menú móvil y handlers.
+ * CoreTT - Main (portada).
+ * Inicializacion de la pagina de inicio: carga dinamica de contenido.
  */
 document.addEventListener('DOMContentLoaded', () => {
     initGetStarted();
+    Auth.init();
     loadGuides();
     loadPosts();
-    Auth.init();
 });
 
-/* ---------- Botón "Comenzar" ---------- */
+/* ---------- Boton "Comenzar" ---------- */
 function initGetStarted() {
     const btn = document.getElementById('getStartedBtn');
     if (btn) {
@@ -22,36 +22,26 @@ function initGetStarted() {
     }
 }
 
-/* ---------- Carga dinámica de guías ---------- */
+/* ---------- Carga dinamica de guias ---------- */
 async function loadGuides() {
     const container = document.getElementById('guidesContainer');
     if (!container) return;
 
-    // Solo renderizamos dinámicamente cuando el backend existe.
-    // En modo demo (sin backend) se conserva el HTML estático con las portadas.
+    // Sin backend (modo demo) se conserva el HTML estatico con las portadas.
     if (!API.isAvailable()) return;
 
     try {
         const guides = await API.getGuides();
-
         if (Array.isArray(guides) && guides.length > 0) {
-            renderGuides(guides);
+            container.innerHTML = '';
+            renderGuides(guides, container);
         }
     } catch (error) {
-        console.error('Error cargando guías:', error);
+        Core.notify(error.message, 'error');
     }
 }
 
-function renderGuides(guides) {
-    const container = document.getElementById('guidesContainer');
-    if (!container) return;
-
-    const firstGameImages = {
-        'League of Legends': 'assets/League of Legends.png',
-        'Counter-Strike 2': 'assets/Counter Strike 2.png',
-        'Fortnite': 'assets/Fortnite.png'
-    };
-
+function renderGuides(guides, container) {
     const grid = document.createElement('div');
     grid.className = 'guides-grid';
 
@@ -59,29 +49,27 @@ function renderGuides(guides) {
         const card = document.createElement('article');
         card.className = 'guide-card';
 
-        const image = firstGameImages[guide.game] || '';
-        const imgHtml = image
-            ? `<img src="${image}" alt="${guide.game}">`
+        const imgHtml = guide.image
+            ? `<img src="${Core.escapeHtml(guide.image)}" alt="${Core.escapeHtml(guide.game)}">`
             : '';
 
         card.innerHTML = `
             ${imgHtml}
-            <h3>${escapeHtml(guide.title)}</h3>
-            <p>${escapeHtml(guide.description || '')}</p>
+            <h3><a href="pages/guide.html?id=${guide.id}">${Core.escapeHtml(guide.title)}</a></h3>
+            <p>${Core.escapeHtml(guide.description || '')}</p>
             <div class="guide-meta">
-                <span class="guide-author">${escapeHtml(guide.author)}</span>
-                <span class="guide-date">${escapeHtml(guide.date || '')}</span>
-                <span class="guide-votes">&#9650; ${guide.votes || 0}</span>
+                <span class="guide-author">${Core.escapeHtml(guide.author)}</span>
+                <span class="guide-date">${Core.escapeHtml(guide.date || '')}</span>
+                <span class="guide-votes">&#9650; ${Core.compactNumber(guide.votes || 0)}</span>
             </div>
         `;
         grid.appendChild(card);
     });
 
-    container.innerHTML = '';
     container.appendChild(grid);
 }
 
-/* ---------- Carga dinámica de posts ---------- */
+/* ---------- Carga dinamica de posts ---------- */
 async function loadPosts() {
     const container = document.getElementById('postsContainer');
     if (!container) return;
@@ -91,15 +79,14 @@ async function loadPosts() {
 
         if (Array.isArray(posts) && posts.length > 0) {
             container.innerHTML = '';
-            posts.forEach((post) => {
+            posts.slice(0, 5).forEach((post) => {
                 const item = document.createElement('div');
                 item.className = 'post-item';
-                item.title = 'Ver en el foro';
                 item.innerHTML = `
-                    <h3>${escapeHtml(post.title)}</h3>
-                    <p>${escapeHtml(post.excerpt || '')}</p>
+                    <h3>${Core.escapeHtml(post.title)}</h3>
+                    <p>${Core.escapeHtml(post.excerpt || '')}</p>
                     <div class="post-meta">
-                        ${escapeHtml(post.author)} &middot; ${escapeHtml(post.date || '')}
+                        ${Core.escapeHtml(post.author)} &middot; ${Core.escapeHtml(post.date || '')}
                     </div>
                 `;
                 item.addEventListener('click', () => {
@@ -109,14 +96,6 @@ async function loadPosts() {
             });
         }
     } catch (error) {
-        console.error('Error cargando posts:', error);
+        Core.notify(error.message, 'error');
     }
-}
-
-/* ---------- Utilidades ---------- */
-function escapeHtml(text) {
-    if (typeof text !== 'string') return text;
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }

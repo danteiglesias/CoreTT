@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoreTT - Guia</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+    <main class="container">
+        <section id="guideContent"></section>
+    </main>
+
+    <!-- Modal Editar Guia -->
+    <div id="editGuideModal" class="modal">
+        <div class="modal-content">
+            <span class="close" data-close="editGuideModal">&times;</span>
+            <h2>Editar Guia</h2>
+            <form id="editGuideForm">
+                <input type="text" id="editGuideTitle" placeholder="Titulo de la guia" required>
+                <select id="editGuideGame" required>
+                    <option value="">Selecciona el juego</option>
+                    <option value="League of Legends">League of Legends</option>
+                    <option value="Counter-Strike 2">Counter-Strike 2</option>
+                    <option value="Fortnite">Fortnite</option>
+                </select>
+                <input type="text" id="editGuidePatch" placeholder="Parche / temporada (opcional)">
+                <textarea id="editGuideDescription" placeholder="Breve descripcion" rows="2"></textarea>
+                <textarea id="editGuideContent" placeholder="Contenido completo de la guia" required></textarea>
+                <div id="guideEditError" class="form-error"></div>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/core.js"></script>
+    <script src="../js/layout.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/guide.js"></script>
+</body>
+</html>

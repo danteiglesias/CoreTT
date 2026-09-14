@@ -1,0 +1,19 @@
+{
+    "name": "danteiglesias/corett",
+    "description": "CoreTT - Plataforma de guias y meta competitivo",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=7.4",
+        "ext-pdo": "*",
+        "ext-mbstring": "*"
+    },
+    "scripts": {
+        "seed": "php backend/bin/seed.php",
+        "test": "php tests/run_tests.php",
+        "lint": "find backend tests -name '*.php' -exec php -l {} \\;"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

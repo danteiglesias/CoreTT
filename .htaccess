@@ -1,0 +1,15 @@
+# CoreTT - configuracion de Apache para docroot = raiz del proyecto.
+# Solo aplica si Apache permite override (AllowOverride All).
+
+Options -Indexes
+DirectoryIndex frontend/index.html
+
+# Headers de seguridad basicos
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+<FilesMatch "\.(env|md|sql|json|lock)$">
+    Require all denied
+</FilesMatch>

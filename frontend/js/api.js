@@ -1,21 +1,26 @@
 /**
- * CoreTT - API Client
- * Capa de comunicación con el backend PHP.
- * Si el backend no está disponible, los métodos usan datos de demo
- * para que el frontend siga funcionando de forma autónoma.
+ * CoreTT - API Client.
+ * Capa de comunicacion con el backend PHP.
+ *
+ * Modo real por defecto (requiere servidor PHP + base de datos).
+ * Modo demo: agregar ?demo=1 a la URL (o window.API_CONFIG.demo = true).
  */
 const API = (() => {
-    const BASE_URL = '../backend/api/';
-    const API_AVAILABLE = false; // Cambiar a true cuando el backend esté listo
+    const DEMO_MODE =
+        /[?&]demo=/.test(location.search) ||
+        (window.API_CONFIG && window.API_CONFIG.demo === true);
+
+    const BASE_URL = (window.Core && Core.apiBase) || '/backend/api/';
+    const API_AVAILABLE = !DEMO_MODE;
 
     /* ============================================
-       Base de datos de demostración (en memoria)
+       Base de datos de demostracion (en memoria)
        ============================================ */
 
     const GAME_IMAGES = {
-        'League of Legends': '../assets/League of Legends.png',
-        'Counter-Strike 2': '../assets/Counter Strike 2.png',
-        'Fortnite': '../assets/Fortnite.png'
+        'League of Legends': () => Core.asset('League of Legends.png'),
+        'Counter-Strike 2': () => Core.asset('Counter Strike 2.png'),
+        'Fortnite': () => Core.asset('Fortnite.png')
     };
 
     const GAME_CLASS = {
@@ -27,116 +32,61 @@ const API = (() => {
     const demoDB = {
         guides: [
             {
-                id: 1,
-                title: 'Cómo dominar el macro en League of Legends',
-                game: 'League of Legends',
-                author: 'JohnDoe',
-                description: 'Control de oleadas, visión y toma de decisiones para subir de elo.',
-                date: '2026-09-01',
-                votes: 128,
-                content: 'El macrojuego es la habilidad de tomar las decisiones correctas en el momento correcto...'
+                id: 1, title: 'Como dominar el macro en League of Legends', game: 'League of Legends',
+                author: 'JohnDoe', description: 'Control de oleadas, vision y toma de decisiones para subir de elo.',
+                date: '2026-09-01', votes: 128, content: 'El macro es la habilidad de tomar las decisiones correctas...'
             },
             {
-                id: 2,
-                title: 'Lineups de humo en Mirage - CS2',
-                game: 'Counter-Strike 2',
-                author: 'SmokeMaster',
-                description: 'Los mejores lineups de humo para Mirage, con posición y referencia.',
-                date: '2026-08-28',
-                votes: 96,
-                content: 'En Mirage los humos en ventana (palace) y coctelera (CT spawn) son esenciales...'
+                id: 2, title: 'Lineups de humo en Mirage - CS2', game: 'Counter-Strike 2',
+                author: 'SmokeMaster', description: 'Los mejores lineups de humo para Mirage.',
+                date: '2026-08-28', votes: 96, content: 'En Mirage los humos en ventana (palace) y coctelera son esenciales...'
             },
             {
-                id: 3,
-                title: 'Meta de armas temporada 5 - Fortnite',
-                game: 'Fortnite',
-                author: 'VictoryRoyale',
-                description: 'Ranking de armas según el parche actual y rotaciones óptimas.',
-                date: '2026-08-25',
-                votes: 74,
-                content: 'La temporada 5 trae cambios importantes en drops y rotaciones de la tormenta...'
+                id: 3, title: 'Meta de armas temporada 5 - Fortnite', game: 'Fortnite',
+                author: 'VictoryRoyale', description: 'Ranking de armas segun el parche actual.',
+                date: '2026-08-25', votes: 74, content: 'La temporada 5 trae cambios importantes en drops y rotaciones...'
             },
             {
-                id: 4,
-                title: 'Economía en CS2: cuándo comprar y cuándo ahorrar',
-                game: 'Counter-Strike 2',
-                author: 'EcoMaster',
-                description: 'Guía de la economía del equipo: ecos, force buys y full buys.',
-                date: '2026-08-20',
-                votes: 61,
-                content: 'Entender la economía es clave para ganar rondas importantes...'
+                id: 4, title: 'Economia en CS2: cuando comprar y cuando ahorrar', game: 'Counter-Strike 2',
+                author: 'EcoMaster', description: 'Ecos, force buys y full buys.',
+                date: '2026-08-20', votes: 61, content: 'Entender la economia es clave para ganar rondas importantes...'
             },
             {
-                id: 5,
-                title: 'Matchup Zed vs control mages en mid lane',
-                game: 'League of Legends',
-                author: 'MidDiff',
-                description: 'Cómo sobrevivir al early contra Zed y escalar al mid game.',
-                date: '2026-08-15',
-                votes: 45,
-                content: 'Zed es un campeón de all-in temprano; la clave es el posicionamiento...'
+                id: 5, title: 'Matchup Zed vs control mages en mid lane', game: 'League of Legends',
+                author: 'MidDiff', description: 'Como sobrevivir al early contra Zed.',
+                date: '2026-08-15', votes: 45, content: 'Zed es un campeon de all-in temprano; la clave es posicionarse bien...'
             },
             {
-                id: 6,
-                title: 'Zonas de drop seguras en Fortnite',
-                game: 'Fortnite',
-                author: 'DropMaster',
-                description: 'Mejores zonas de drop para farmear y sobrevivir al early game.',
-                date: '2026-08-10',
-                votes: 52,
-                content: 'Las zonas de drop determinan tu early game y tus rotaciones...'
+                id: 6, title: 'Zonas de drop seguras en Fortnite', game: 'Fortnite',
+                author: 'DropMaster', description: 'Mejores zonas de drop para el early game.',
+                date: '2026-08-10', votes: 52, content: 'Las zonas de drop determinan tu early y tus rotaciones...'
             }
         ],
         posts: [
             {
-                id: 1,
-                title: '¿Cuál es el mejor campeón para empezar en LoL?',
-                author: 'NewPlayer',
-                date: '2026-09-03',
-                excerpt: 'Soy nuevo y no sé por quién empezar. ¿Recomendaciones de campeones sencillos?',
-                body: 'Llevo unas semanas jugando y me pierdo con la cantidad de campeones. ¿Cuáles recomiendan para aprender las mecánicas base?',
+                id: 1, title: 'Cual es el mejor campeon para empezar en LoL?', author: 'NewPlayer',
+                date: '2026-09-03', excerpt: 'Soy nuevo y no se por quien empezar.', body: 'Recomienden campeones sencillos.',
                 comments: [
-                    { author: 'MrMid', date: '2026-09-03', text: 'Empieza con Garen o Annie. Son simples y te enseñan conceptos clave.' },
-                    { author: 'CoachTT', date: '2026-09-04', text: 'También te recomiendo jugar todos los roles una vez para entender el juego.' }
+                    { author: 'MrMid', date: '2026-09-03', text: 'Empieza con Garen o Annie.' },
+                    { author: 'CoachTT', date: '2026-09-04', text: 'Juega todos los roles una vez.' }
                 ],
                 replies: 2
             },
             {
-                id: 2,
-                title: 'Economía en CS2: estrategias de ecos',
-                author: 'TeamPilot',
-                date: '2026-09-01',
-                excerpt: '¿Cuándo conviene hacer eco completo y cuándo forzar compra?',
-                body: 'En partidas igualadas la economía decide muchas rondas. Compartid vuestras reglas de oro.',
+                id: 2, title: 'Economia en CS2: estrategias de ecos', author: 'TeamPilot',
+                date: '2026-09-01', excerpt: 'Cuando conviene eco completo?', body: 'En partidas igualadas la economia decide.',
                 comments: [
-                    { author: 'EcoMaster', date: '2026-09-01', text: 'Regla simple: nunca compres de más si perdiste la ronda de pistolas.' },
-                    { author: 'SmokeMaster', date: '2026-09-02', text: 'Los force buys funcionan en maps pequeños (Mirage) si ganáis el primer duelo.' }
-                ],
-                replies: 2
-            },
-            {
-                id: 3,
-                title: 'Rotaciones del final de partida en Fortnite',
-                author: 'ZoneWatcher',
-                date: '2026-08-29',
-                excerpt: 'Tips para posicionarse mejor en las últimas zonas.',
-                body: 'Siempre me pillan las rotaciones y pierdo por la tormenta. ¿Consejos para el late game?',
-                comments: [
-                    { author: 'VictoryRoyale', date: '2026-08-30', text: 'Mueve siempre con altura y nunca te quedes sin materiales en la cuarta zona.' }
+                    { author: 'EcoMaster', date: '2026-09-01', text: 'No compres de mas si perdiste la ronda de pistolas.' }
                 ],
                 replies: 1
             }
         ],
         users: [
             { id: 1, name: 'Admin', email: 'admin@corett.com', role: 'admin', rank: 'Diamante', guides: 8, votes: 342 },
-            { id: 2, name: 'JohnDoe', email: 'john@corett.com', role: 'user', rank: 'Oro', guides: 4, votes: 128 },
-            { id: 3, name: 'SmokeMaster', email: 'smoke@corett.com', role: 'user', rank: 'Global Elite', guides: 6, votes: 215 },
-            { id: 4, name: 'VictoryRoyale', email: 'victory@corett.com', role: 'user', rank: 'Champion', guides: 3, votes: 96 },
-            { id: 5, name: 'NewPlayer', email: 'new@corett.com', role: 'user', rank: 'Bronce', guides: 0, votes: 12 }
+            { id: 2, name: 'JohnDoe', email: 'john@corett.com', role: 'user', rank: 'Oro', guides: 4, votes: 128 }
         ]
     };
 
-    // Estado de sesión demo de votos y posts creados (en memoria)
     const session = { votes: {}, createdPosts: [] };
 
     /* ============================================
@@ -144,11 +94,10 @@ const API = (() => {
        ============================================ */
 
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-    const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-    async function request(endpoint, method = 'GET', body = null, authenticated = false) {
+    async function request(endpoint, method, body, authenticated) {
         const options = {
-            method: method,
+            method: method || 'GET',
             headers: { 'Content-Type': 'application/json' }
         };
 
@@ -163,33 +112,61 @@ const API = (() => {
             options.body = JSON.stringify(body);
         }
 
-        const response = await fetch(BASE_URL + endpoint, options);
-        const data = await response.json();
+        let response;
+        try {
+            response = await fetch(BASE_URL + endpoint, options);
+        } catch (err) {
+            throw new Error('No se pudo conectar con el servidor. Verifica que el backend este corriendo.');
+        }
+
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (err) {
+            data = null;
+        }
 
         if (!response.ok) {
-            throw new Error(data.error || 'Error en la petición');
+            throw new Error((data && data.error) || 'Error ' + response.status + ' en la peticion');
         }
         return data;
     }
 
+    function enrichGuide(guide) {
+        const extra = DEMO_MODE ? (session.votes[guide.id] || 0) : 0;
+        return {
+            ...guide,
+            image: (GAME_IMAGES[guide.game] || (() => ''))(),
+            gameClass: GAME_CLASS[guide.game] || '',
+            votes: (guide.votes || 0) + extra
+        };
+    }
+
     /* ============================================
-       Guías
+       Guias
        ============================================ */
 
-    async function getGuides(options = {}) {
+    async function getGuides(options) {
+        options = options || {};
         if (API_AVAILABLE) {
-            const query = options.game ? ('?game=' + encodeURIComponent(options.game)) : '';
-            return request('guides.php' + query);
+            const params = new URLSearchParams();
+            if (options.game && options.game !== 'Todos') params.set('game', options.game);
+            if (options.search) params.set('search', options.search);
+            if (options.page) params.set('page', options.page);
+            if (options.limit) params.set('limit', options.limit);
+            if (options.sort) params.set('sort', options.sort);
+
+            const qs = params.toString();
+            const data = await request('guides.php' + (qs ? '?' + qs : ''));
+            const guides = (data.guides || []).map(enrichGuide);
+            guides.total = data.total || 0;
+            return guides;
         }
 
         await delay(200);
         let guides = [...demoDB.guides];
-
         if (options.game && options.game !== 'Todos') {
             guides = guides.filter((g) => g.game === options.game);
-        }
-        if (options.game && options.game === 'Todos') {
-            guides = demoDB.guides;
         }
         if (options.search) {
             const q = options.search.toLowerCase();
@@ -199,38 +176,43 @@ const API = (() => {
                 g.description.toLowerCase().includes(q)
             );
         }
-
-        // Añadir imágenes y clases de juego
-        return guides.map((g) => enrichGuide(g));
-    }
-
-    function enrichGuide(guide) {
-        return {
-            ...guide,
-            image: GAME_IMAGES[guide.game],
-            gameClass: GAME_CLASS[guide.game] || '',
-            votes: guide.votes + (session.votes[guide.id] || 0)
-        };
+        const result = guides.map(enrichGuide);
+        result.total = guides.length;
+        return result;
     }
 
     async function getGuide(id) {
         if (API_AVAILABLE) {
-            return request('guides.php?id=' + id);
+            return enrichGuide(await request('guides.php?id=' + encodeURIComponent(id)));
         }
         await delay(150);
         const guide = demoDB.guides.find((g) => g.id === Number(id));
-        if (!guide) throw new Error('Guía no encontrada');
+        if (!guide) throw new Error('Guia no encontrada');
         return enrichGuide(guide);
     }
 
+    async function getMyGuides() {
+        if (API_AVAILABLE) {
+            const data = await request('guides.php?action=my', 'GET', null, true);
+            const guides = (data || []).map(enrichGuide);
+            guides.total = guides.length;
+            return guides;
+        }
+        await delay(150);
+        const user = Auth ? Auth.getCurrentUser() : null;
+        const guides = (user ? demoDB.guides.filter((g) => g.author === user.name) : [])
+            .map(enrichGuide);
+        guides.total = guides.length;
+        return guides;
+    }
+
     async function voteGuide(id, vote) {
-        // vote: +1 (up) o -1 (down)
         if (API_AVAILABLE) {
             return request('guides.php?action=vote', 'POST', { id, vote }, true);
         }
         await delay(120);
         session.votes[id] = (session.votes[id] || 0) + vote;
-        return { success: true, votes: demoDB.guides.find((g) => g.id === id).votes + session.votes[id] };
+        return { success: true, votes: demoDB.guides.find((g) => g.id === Number(id)).votes + session.votes[id] };
     }
 
     async function createGuide(data) {
@@ -239,23 +221,32 @@ const API = (() => {
         }
         await delay(200);
         const user = Auth ? Auth.getCurrentUser() : null;
-        const newGuide = {
+        demoDB.guides.unshift({
             id: demoDB.guides.length + 100,
             title: data.title,
             game: data.game,
             description: data.description,
             content: data.content,
-            author: user ? user.name : 'Anónimo',
+            author: user ? user.name : 'Anonimo',
             date: new Date().toISOString().slice(0, 10),
             votes: 0
-        };
-        demoDB.guides.unshift(newGuide);
-        return { success: true, guide: enrichGuide(newGuide) };
+        });
+        return { success: true };
+    }
+
+    async function updateGuide(id, data) {
+        if (API_AVAILABLE) {
+            return request('guides.php?id=' + encodeURIComponent(id), 'PUT', data, true);
+        }
+        await delay(200);
+        const guide = demoDB.guides.find((g) => g.id === Number(id));
+        if (guide) Object.assign(guide, data);
+        return { success: true };
     }
 
     async function deleteGuide(id) {
         if (API_AVAILABLE) {
-            return request('guides.php?id=' + id, 'DELETE', null, true);
+            return request('guides.php?id=' + encodeURIComponent(id), 'DELETE', null, true);
         }
         await delay(120);
         demoDB.guides = demoDB.guides.filter((g) => g.id !== Number(id));
@@ -266,17 +257,28 @@ const API = (() => {
        Foro
        ============================================ */
 
-    async function getPosts() {
+    async function getPosts(options) {
+        options = options || {};
         if (API_AVAILABLE) {
-            return request('forum.php');
+            const params = new URLSearchParams();
+            if (options.page) params.set('page', options.page);
+            if (options.limit) params.set('limit', options.limit);
+            if (options.search) params.set('search', options.search);
+            const qs = params.toString();
+            const data = await request('forum.php' + (qs ? '?' + qs : ''));
+            const posts = data.posts || [];
+            posts.total = data.total || 0;
+            return posts;
         }
         await delay(200);
-        return [...demoDB.posts, ...session.createdPosts];
+        const posts = [...demoDB.posts, ...session.createdPosts];
+        posts.total = posts.length;
+        return posts;
     }
 
     async function getPost(id) {
         if (API_AVAILABLE) {
-            return request('forum.php?id=' + id);
+            return request('forum.php?id=' + encodeURIComponent(id));
         }
         await delay(150);
         const post = [...demoDB.posts, ...session.createdPosts].find((p) => p.id === Number(id));
@@ -290,18 +292,17 @@ const API = (() => {
         }
         await delay(200);
         const user = Auth ? Auth.getCurrentUser() : null;
-        const newPost = {
+        session.createdPosts.unshift({
             id: demoDB.posts.length + session.createdPosts.length + 200,
             title: data.title,
             body: data.body,
             excerpt: data.body.slice(0, 120) + (data.body.length > 120 ? '...' : ''),
-            author: user ? user.name : 'Anónimo',
+            author: user ? user.name : 'Anonimo',
             date: new Date().toISOString().slice(0, 10),
             comments: [],
             replies: 0
-        };
-        session.createdPosts.push(newPost);
-        return { success: true, post: newPost };
+        });
+        return { success: true };
     }
 
     async function addComment(postId, text) {
@@ -310,22 +311,21 @@ const API = (() => {
         }
         await delay(120);
         const user = Auth ? Auth.getCurrentUser() : null;
-        const comment = {
-            author: user ? user.name : 'Anónimo',
-            date: new Date().toISOString().slice(0, 10),
-            text: text
-        };
         const post = [...demoDB.posts, ...session.createdPosts].find((p) => p.id === Number(postId));
         if (post) {
-            post.comments.push(comment);
+            post.comments.push({
+                author: user ? user.name : 'Anonimo',
+                date: new Date().toISOString().slice(0, 10),
+                text: text
+            });
             post.replies = post.comments.length;
         }
-        return { success: true, comment };
+        return { success: true, text };
     }
 
     async function deletePost(id) {
         if (API_AVAILABLE) {
-            return request('forum.php?id=' + id, 'DELETE', null, true);
+            return request('forum.php?id=' + encodeURIComponent(id), 'DELETE', null, true);
         }
         await delay(120);
         demoDB.posts = demoDB.posts.filter((p) => p.id !== Number(id));
@@ -334,7 +334,7 @@ const API = (() => {
     }
 
     /* ============================================
-       Juegos / Otros
+       Juegos
        ============================================ */
 
     async function getGames() {
@@ -342,93 +342,129 @@ const API = (() => {
             return request('games.php');
         }
         await delay(100);
-        return Object.keys(GAME_IMAGES);
+        return Object.keys(GAME_IMAGES).map((name) => ({
+            name,
+            slug: GAME_CLASS[name],
+            patch: null,
+            stats_count: 0
+        }));
+    }
+
+    /* ============================================
+       Usuarios / Auth
+       ============================================ */
+
+    function normalizeUser(raw) {
+        if (!raw) return raw;
+        return {
+            id: raw.id,
+            name: raw.name || raw.nombre || '',
+            email: raw.email || '',
+            role: raw.role || raw.rol || 'user',
+            rank: raw.rank || raw.rango || null,
+            guides: raw.guides != null ? raw.guides : 0,
+            votes: raw.votes != null ? raw.votes : 0,
+            reputation: raw.reputation != null ? raw.reputation : 0
+        };
+    }
+
+    async function login(email, password) {
+        if (API_AVAILABLE) {
+            const data = await request('users.php?action=login', 'POST', { email, password });
+            return { ...data, user: normalizeUser(data.user) };
+        }
+        await delay(400);
+        if (email.toLowerCase() === 'admin@corett.com') {
+            return { success: true, token: 'demo-admin-token', user: demoDB.users[0] };
+        }
+        if (email && password.length >= 4) {
+            return {
+                success: true,
+                token: 'demo-token-' + Date.now(),
+                user: { id: 999, name: email.split('@')[0], email, role: 'user', rank: 'Oro', guides: 0, votes: 0 }
+            };
+        }
+        throw new Error('Credenciales invalidas');
+    }
+
+    async function register(name, email, password) {
+        if (API_AVAILABLE) {
+            const data = await request('users.php?action=register', 'POST', { name, email, password });
+            return { ...data, user: normalizeUser(data.user) };
+        }
+        await delay(400);
+        if (name && email && password.length >= 4) {
+            return { success: true, message: 'Cuenta creada correctamente. Ahora puedes iniciar sesion.' };
+        }
+        throw new Error('Datos incompletos o contrasena demasiado corta');
+    }
+
+    async function logout() {
+        if (API_AVAILABLE) {
+            try {
+                return await request('users.php?action=logout', 'POST', {}, true);
+            } catch (err) {
+                // No bloquear el logout local si el servidor no responde
+            }
+        }
+        return { success: true };
     }
 
     async function getUsers() {
         if (API_AVAILABLE) {
-            return request('users.php');
+            const data = await request('users.php', 'GET', null, true);
+            return data.users || [];
         }
         await delay(150);
         return demoDB.users;
     }
 
-    /* ============================================
-       Autenticación
-       ============================================ */
-
-    async function login(email, password) {
+    async function changeRole(id, role) {
         if (API_AVAILABLE) {
-            return request('users.php?action=login', 'POST', { email, password });
+            return request('users.php?action=role', 'POST', { id, rol: role }, true);
         }
-
-        await delay(400);
-
-        // Cuenta admin de demo
-        if (email.toLowerCase() === 'admin@corett.com') {
-            return {
-                success: true,
-                token: 'demo-admin-token',
-                user: demoDB.users[0]
-            };
-        }
-
-        // Cuenta normal de demo (cualquier email con contraseña)
-        if (email && password.length >= 4) {
-            const name = email.split('@')[0];
-            return {
-                success: true,
-                token: 'demo-token-' + Date.now(),
-                user: {
-                    id: 999,
-                    name: name,
-                    email: email,
-                    role: 'user',
-                    rank: 'Oro',
-                    guides: 0,
-                    votes: 0
-                }
-            };
-        }
-        throw new Error('Credenciales inválidas');
+        await delay(120);
+        const user = demoDB.users.find((u) => u.id === Number(id));
+        if (user) user.role = role;
+        return { success: true };
     }
 
-    async function register(name, email, password) {
+    async function deleteUser(id) {
         if (API_AVAILABLE) {
-            return request('users.php?action=register', 'POST', { name, email, password });
+            return request('users.php?id=' + encodeURIComponent(id), 'DELETE', null, true);
         }
-        await delay(400);
-        if (name && email && password.length >= 4) {
-            return { success: true, message: 'Cuenta creada correctamente. Ahora puedes iniciar sesión.' };
-        }
-        throw new Error('Datos incompletos o contraseña demasiado corta');
+        await delay(120);
+        demoDB.users = demoDB.users.filter((u) => u.id !== Number(id));
+        return { success: true };
     }
-
-    /* ============================================
-       Perfil (demo)
-       ============================================ */
 
     async function getProfile() {
         if (API_AVAILABLE) {
-            return request('users.php?action=profile', 'GET', null, true);
+            return normalizeUser(await request('users.php?action=profile', 'GET', null, true));
         }
         await delay(150);
         const user = Auth ? Auth.getCurrentUser() : null;
         if (!user) throw new Error('No autenticado');
-
-        const stats = {
+        return {
             name: user.name,
             email: user.email,
             rank: user.rank || 'Sin rango',
             guides: user.guides || demoDB.guides.filter((g) => g.author === user.name).length,
             votes: user.votes || demoDB.guides.filter((g) => g.author === user.name).reduce((sum, g) => sum + g.votes, 0),
-            reputation: user.role === 'admin' ? 100 : '--'
+            reputation: user.role === 'admin' ? 100 : demoDB.guides.filter((g) => g.author === user.name).length * 10
         };
-        return stats;
+    }
+
+    async function updateProfile(data) {
+        if (API_AVAILABLE) {
+            return request('users.php?action=profile', 'PUT', data, true);
+        }
+        await delay(150);
+        return { success: true };
     }
 
     /* ============================================
-       Interfaz pública
+       Interfaz publica
        ============================================ */
 
     return {
@@ -436,8 +472,10 @@ const API = (() => {
         getGames,
         getGuides,
         getGuide,
+        getMyGuides,
         voteGuide,
         createGuide,
+        updateGuide,
         deleteGuide,
         getPosts,
         getPost,
@@ -445,8 +483,12 @@ const API = (() => {
         addComment,
         deletePost,
         getUsers,
+        changeRole,
+        deleteUser,
         getProfile,
+        updateProfile,
         login,
-        register
+        register,
+        logout
     };
 })();

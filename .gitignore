@@ -1,0 +1,29 @@
+# Dependencias
+vendor/
+node_modules/
+
+# Entorno y secretos
+.env
+.env.local
+.env.*.local
+
+# Logs y temporales
+*.log
+debug.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Bases de datos generadas
+database/*.sql.bak
+*_test.sql
+
+# Editores / IDEs
+.idea/
+.vscode/
+.vscode/settings.json
+
+# Cobertura
+coverage/
+.phpunit.result.cache
