@@ -52,16 +52,13 @@ function renderGuides(guides) {
         'Fortnite': 'assets/Fortnite.png'
     };
 
-    const grid = document.createElement('div');
-    grid.className = 'guides-grid';
-
     guides.forEach((guide) => {
         const card = document.createElement('article');
         card.className = 'guide-card';
 
         const image = firstGameImages[guide.game] || '';
         const imgHtml = image
-            ? `<img src="${image}" alt="${guide.game}">`
+            ? `<img src="${image}" alt="${escapeHtml(guide.game)}" loading="lazy">`
             : '';
 
         card.innerHTML = `
@@ -71,14 +68,11 @@ function renderGuides(guides) {
             <div class="guide-meta">
                 <span class="guide-author">${escapeHtml(guide.author)}</span>
                 <span class="guide-date">${escapeHtml(guide.date || '')}</span>
-                <span class="guide-votes">&#9650; ${guide.votes || 0}</span>
+                <span class="guide-votes">&#9650; ${Number(guide.votes) || 0}</span>
             </div>
         `;
-        grid.appendChild(card);
+        container.appendChild(card);
     });
-
-    container.innerHTML = '';
-    container.appendChild(grid);
 }
 
 /* ---------- Carga dinámica de posts ---------- */
@@ -95,6 +89,8 @@ async function loadPosts() {
                 const item = document.createElement('div');
                 item.className = 'post-item';
                 item.title = 'Ver en el foro';
+                item.tabIndex = 0;
+                item.setAttribute('role', 'link');
                 item.innerHTML = `
                     <h3>${escapeHtml(post.title)}</h3>
                     <p>${escapeHtml(post.excerpt || '')}</p>
@@ -102,8 +98,15 @@ async function loadPosts() {
                         ${escapeHtml(post.author)} &middot; ${escapeHtml(post.date || '')}
                     </div>
                 `;
-                item.addEventListener('click', () => {
+                const goForum = () => {
                     window.location.href = 'pages/forum.html';
+                };
+                item.addEventListener('click', goForum);
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        goForum();
+                    }
                 });
                 container.appendChild(item);
             });

@@ -1,0 +1,65 @@
+-- CoreTT - Esquema mínimo MySQL 8
+CREATE DATABASE IF NOT EXISTS corett CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE corett;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('admin','user') NOT NULL DEFAULT 'user',
+  `rank` VARCHAR(50) NOT NULL DEFAULT 'Bronce',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_users_email (email)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS games (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS guides (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  game_id INT NULL,
+  title VARCHAR(200) NOT NULL,
+  description VARCHAR(500) NOT NULL,
+  content TEXT NOT NULL,
+  votes INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE SET NULL,
+  INDEX idx_guides_game (game_id),
+  FULLTEXT idx_guides_search (title, description)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS forum_posts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  title VARCHAR(200) NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS forum_comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  post_id INT NOT NULL,
+  user_id INT NULL,
+  text TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX idx_comments_post (post_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS votes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  guide_id INT NOT NULL,
+  value TINYINT NOT NULL CHECK (value IN (-1, 1)),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_vote (user_id, guide_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (guide_id) REFERENCES guides(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

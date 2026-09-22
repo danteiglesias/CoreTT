@@ -39,19 +39,21 @@ function renderGuides(guides) {
     guides.forEach((guide) => {
         const card = document.createElement('article');
         card.className = 'guide-card';
+        const gid = Number(guide.id);
+        const imgSrc = guide.image ? escapeHtml(guide.image) : 'assets/Fortnite.png';
 
         card.innerHTML = `
-            <img src="${escapeHtml(guide.image)}" alt="${escapeHtml(guide.game)}">
-            <span class="badge ${escapeHtml(guide.gameClass)}">${escapeHtml(guide.game)}</span>
+            <img src="${imgSrc}" alt="${escapeHtml(guide.game)}" loading="lazy" onerror="this.style.display='none'">
+            <span class="badge ${escapeHtml(guide.gameClass || '')}">${escapeHtml(guide.game)}</span>
             <h3>${escapeHtml(guide.title)}</h3>
             <p>${escapeHtml(guide.description || '')}</p>
             <div class="guide-meta">
                 <span class="guide-author">${escapeHtml(guide.author)}</span>
                 <span>${escapeHtml(guide.date)}</span>
                 <div class="vote-group">
-                    <button class="vote-btn up" data-id="${guide.id}" title="Votar arriba">&#9650;</button>
-                    <span class="guide-votes" id="votes-${guide.id}">${guide.votes}</span>
-                    <button class="vote-btn down" data-id="${guide.id}" title="Votar abajo">&#9660;</button>
+                    <button class="vote-btn up" data-id="${gid}" title="Votar arriba">&#9650;</button>
+                    <span class="guide-votes" id="votes-${gid}">${Number(guide.votes) || 0}</span>
+                    <button class="vote-btn down" data-id="${gid}" title="Votar abajo">&#9660;</button>
                 </div>
             </div>
         `;
@@ -65,9 +67,11 @@ function renderGuides(guides) {
 }
 
 async function handleVote(button) {
+    if (!Auth.requireAuth()) return;
     const id = Number(button.dataset.id);
     const vote = button.classList.contains('up') ? 1 : -1;
 
+    button.disabled = true;
     try {
         const result = await API.voteGuide(id, vote);
         const votesEl = document.getElementById('votes-' + id);
@@ -77,6 +81,8 @@ async function handleVote(button) {
         button.classList.add('active');
     } catch (error) {
         console.error('Error al votar:', error);
+    } finally {
+        button.disabled = false;
     }
 }
 
@@ -96,11 +102,14 @@ function initSearch() {
     if (!input) return;
 
     let timeout;
+    let lastQuery = 0;
     input.addEventListener('input', () => {
         clearTimeout(timeout);
         timeout = setTimeout(async () => {
+            const myQuery = ++lastQuery;
             try {
                 const guides = await API.getGuides({ game: currentFilter, search: input.value.trim() });
+                if (myQuery !== lastQuery) return; // descarta respuestas obsoletas
                 renderGuides(guides);
             } catch (error) {
                 console.error('Error en búsqueda:', error);
@@ -137,6 +146,10 @@ function initCreateGuide() {
 
                 if (!data.title || !data.game || !data.description || !data.content) {
                     errorEl.textContent = 'Completa todos los campos.';
+                    return;
+                }
+                if (data.title.length < 5 || data.title.length > 200 || data.description.length < 10 || data.content.length < 20) {
+                    errorEl.textContent = 'Título (5-200), descripción (10+) y contenido (20+) muy cortos.';
                     return;
                 }
 

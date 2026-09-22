@@ -34,7 +34,7 @@ async function loadPosts() {
                     <span>${escapeHtml(post.author)}</span>
                     <span>&middot;</span>
                     <span>${escapeHtml(post.date)}</span>
-                    <span class="post-stats">&#128172; ${post.replies || 0} respuestas</span>
+                    <span class="post-stats">&#128172; ${Number(post.replies) || 0} respuestas</span>
                 </div>
             `;
             item.addEventListener('click', () => showPostDetail(post.id));
@@ -122,13 +122,13 @@ function renderComments(comments) {
 function openCommentEditor() {
     const container = document.getElementById('commentsContainer');
     if (!container) return;
-
-    const previous = container.innerHTML;
+    // Evita editores duplicados
+    if (document.getElementById('submitCommentBtn')) return;
 
     const editor = document.createElement('div');
     editor.className = 'comment';
     editor.innerHTML = `
-        <textarea placeholder="Escribe tu comentario..." class="comment-input"></textarea>
+        <textarea placeholder="Escribe tu comentario..." class="comment-input" maxlength="2000"></textarea>
         <div class="mt-1">
             <button class="btn btn-primary btn-sm" id="submitCommentBtn">Enviar</button>
             <button class="btn btn-secondary btn-sm" id="cancelCommentBtn">Cancelar</button>
@@ -136,20 +136,24 @@ function openCommentEditor() {
     `;
     container.prepend(editor);
 
-    document.getElementById('submitCommentBtn').addEventListener('click', async () => {
+    document.getElementById('submitCommentBtn').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
         const text = editor.querySelector('textarea').value.trim();
         if (!text) return;
 
+        btn.disabled = true;
         try {
             await API.addComment(currentPostId, text);
             const post = await API.getPost(currentPostId);
             renderComments(post.comments || []);
         } catch (error) {
             console.error('Error al comentar:', error);
+        } finally {
+            btn.disabled = false;
         }
     });
     document.getElementById('cancelCommentBtn').addEventListener('click', () => {
-        container.innerHTML = previous;
+        editor.remove();
     });
 }
 
