@@ -27,6 +27,12 @@ RUN printf '%s\n' \
     '<DirectoryMatch "/var/www/html/\.git">' \
     '    Require all denied' \
     '</DirectoryMatch>' \
+    \
+    '# El SQL vive en backend/db y esta dentro del docroot. Bloquearlo aqui,' \
+    '# a nivel de servidor, para que no dependa del .htaccess.' \
+    '<DirectoryMatch "/var/www/html/backend/db">' \
+    '    Require all denied' \
+    '</DirectoryMatch>' \
     '<FilesMatch "^\.env(\..*)?$">' \
     '    Require all denied' \
     '</FilesMatch>' \

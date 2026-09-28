@@ -3,7 +3,7 @@
 --
 -- ATENCION: este archivo DESTRUYE los datos. Contiene DROP TABLE sobre las
 -- 10 tablas, asi que solo debe usarse en una base vacia o para reinstalar
--- desde cero. Para una base ya existente usa database/migraciones.sql.
+-- desde cero. Para una base ya existente usa backend/db/migraciones.sql.
 --
 -- Ejecuta primero schema.sql y despues datos_iniciales.sql.
 -- =====================================================================

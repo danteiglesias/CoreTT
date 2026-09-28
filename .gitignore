@@ -16,7 +16,7 @@ Thumbs.db
 *.tmp
 
 # Bases de datos generadas
-database/*.sql.bak
+backend/db/*.sql.bak
 *_test.sql
 
 # Editores / IDEs

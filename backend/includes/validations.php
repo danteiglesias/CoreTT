@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-/* Limites alineados con database/schema.sql */
+/* Limites alineados con backend/db/schema.sql */
 const MAX_NOMBRE = 50;
 const MAX_EMAIL = 190;
 const MIN_PASSWORD = 8;

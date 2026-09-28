@@ -5,7 +5,7 @@
 -- base con datos. Usa este archivo en su lugar.
 --
 -- Es idempotente: se puede ejecutar varias veces.
---   mysql -u root -p corett < database/migraciones.sql
+--   mysql -u root -p corett < backend/db/migraciones.sql
 -- =====================================================================
 
 USE `corett`;

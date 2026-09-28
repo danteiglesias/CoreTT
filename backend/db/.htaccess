@@ -1,0 +1,28 @@
+# CoreTT - SQL no servible por HTTP.
+#
+# Esta carpeta esta dentro del docroot (el proyecto se sirve desde la raiz),
+# asi que sin estas reglas un .sql seria descargable tal cual y publicaria el
+# esquema completo de la base de datos.
+#
+# El .htaccess de la raiz ya bloquea *.sql, pero duplicar el permiso aqui
+# hace que la proteccion viaje con la carpeta: sigue aplicando aunque alguien
+# sirva el proyecto con otro DocumentRoot, cambie el .htaccess de la raiz o
+# monte solo un subdirectorio.
+#
+# Estos ficheros solo se necesitan al instalar o migrar la base de datos
+# (docker-entrypoint-initdb.d y el cliente mysql), nunca en runtime, asi que
+# bloquearlos no afecta a la aplicacion.
+
+# Denegar todo el acceso por HTTP a esta carpeta.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+# Compatibilidad con Apache 2.2.
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
+
+# Sin listado de directorios.
+Options -Indexes

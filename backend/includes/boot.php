@@ -11,7 +11,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/validations.php';
 require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/votes.php';
+require_once __DIR__ . '/voting.php';
 
 date_default_timezone_set('UTC');
 

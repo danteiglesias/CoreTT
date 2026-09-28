@@ -108,7 +108,7 @@ function resolve_game_id(PDO $pdo, string $game): ?int
 
 /**
  * Aplica un voto con toggle: mismo valor lo anula, distinto lo cambia.
- * (Implementado en backend/includes/votes.php e incluido via boot.php.)
+ * (Implementado en backend/includes/voting.php e incluido via boot.php.)
  */
 
 /* =====================================================================

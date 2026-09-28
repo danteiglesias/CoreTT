@@ -38,12 +38,12 @@ CORETT es una pagina web impulsada por la comunidad, disenada para ir mas alla d
 2. Crea la base de datos:
 
    ```bash
-   mysql -u root -p < database/schema.sql
-   mysql -u root, -p corett < database/datos_iniciales.sql
+   mysql -u root, -p < backend/db/schema.sql
+   mysql -u root, -p corett < backend/db/datos_iniciales.sql
    ```
 
    > `schema.sql` **borra las 10 tablas** antes de crearlas: es solo para una
-   > base vacia. Si ya tienes datos, usa `database/migraciones.sql`, que es
+   > base vacia. Si ya tienes datos, usa `backend/db/migraciones.sql`, que es
    > idempotente y no destruye nada.
 
 3. Configura el entorno: copia `.env.example` a `.env` y ajusta las credenciales:
@@ -81,7 +81,7 @@ docker compose exec web php backend/bin/seed.php
 # Abre http://localhost:8080/frontend/
 ```
 
-El contenedor `db` importa automaticamente `database/schema.sql` y `database/datos_iniciales.sql` la primera vez que se levanta.
+El contenedor `db` importa automaticamente `backend/db/schema.sql` y `backend/db/datos_iniciales.sql` la primera vez que se levanta.
 
 El puerto de MySQL no se publica al host: solo el contenedor `web` necesita
 acceder a la base de datos.
@@ -94,11 +94,12 @@ backend/
   bin/seed.php    # Seed de administrador y datos demo (CLI)
   config/         # Conexion PDO + lectura de .env
   includes/       # boot (CORS/errores), functions, validations, auth, votes
+  includes/       # boot (CORS/errores), functions, validations, auth, voting
+  db/             # SQL: schema (DESTRUCTIVO), migraciones, datos iniciales
+    schema.sql           # Esquema completo del modelo relacional
+    migraciones.sql      # Migraciones idempotentes para bases ya existentes
+    datos_iniciales.sql  # Juegos, parches y meta stats de referencia
   index.php       # Health check de la API
-database/
-  schema.sql      # Esquema completo del modelo relacional (DESTRUCTIVO)
-  migraciones.sql # Migraciones idempotentes para bases ya existentes
-  datos_iniciales.sql  # Juegos, parches y meta stats de referencia
 frontend/
   index.html            # Portada
   pages/                # guides.html, forum.html, profile.html, admin.html, guide.html

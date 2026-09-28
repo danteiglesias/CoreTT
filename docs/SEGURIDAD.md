@@ -6,7 +6,7 @@ Este documento resume que se corrigio, como verificarlo y que queda pendiente.
 
 ### 1. Marcadores SQL reutilizados (HTTP 500)
 
-`database/config` activaba `PDO::ATTR_EMULATE_PREPARES = false`. Con la
+`backend/config/database.php` activaba `PDO::ATTR_EMULATE_PREPARES = false`. Con la
 emulacion desactivada, PDO no admite usar dos veces el mismo marcador nombrado
 en una sentencia, y lanza `SQLSTATE[HY093] Invalid parameter number`.
 
@@ -41,6 +41,38 @@ El `.htaccess` tambien se reforzo (CSP, `RedirectMatch 404 /\.git`, mas
 cabeceras de seguridad) para despliegues en Apache del sistema.
 
 > Si instalas en Apache fuera de Docker, remember configurar `AllowOverride All`.
+
+### 2b. El SQL sigue dentro del docroot
+
+El proyecto se sirve desde su propia raiz, asi que `backend/db/*.sql` queda
+dentro del area web. Un `.sql` descargable publica el esquema completo de la
+base de datos. Esta bloqueado en tres sitios, a proposito:
+
+1. `backend/db/.htaccess` con `Require all denied`: la proteccion **viaja con
+   la carpeta**, asi que sigue aplicando aunque alguien sirva el proyecto con
+   otro `DocumentRoot`, sustituya el `.htaccess` de la raiz o monte solo un
+   subdirectorio.
+2. El `.htaccess` de la raiz, con `<FilesMatch "\.(sql|...)$">`.
+3. La configuracion de Apache del `Dockerfile`, a nivel de servidor, para que
+   no dependa de que el override este habilitado.
+
+Los ficheros solo hacen falta al instalar o migrar (el `docker-entrypoint-initdb.d`
+y el cliente `mysql`), nunca en runtime, asi que bloquearlos no afecta a la
+aplicacion.
+
+**Lo que esta proteccion NO cubre:** Nginx, el servidor embebido de PHP y
+cualquier servidor que no lea `.htaccess`. Si despliegas en alguno de esos, el
+`.sql` se sirve. Equivalente para Nginx:
+
+```nginx
+location ~ ^/backend/db/ { deny all; }
+location ~* \.(sql|md|lock)$ { deny all; }
+```
+
+La unica solucion que no deja margen es **sacar el SQL del docroot**, lo que
+exige que el docroot pase a ser un subdirectorio (por ejemplo `public/`) en vez
+de la raiz del proyecto. Eso cambia todas las rutas de assets y de la API, asi
+que no se hizo aqui.
 
 ### 3. Validacion de entrada que se descartaba
 

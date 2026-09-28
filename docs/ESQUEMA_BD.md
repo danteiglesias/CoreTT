@@ -75,7 +75,7 @@ en `usuarios` queda disponible para un ranking persistente.
 
 ## Seed
 
-`database/datos_iniciales.sql` solo inserta datos de referencia (juegos, parches, meta_stats).
+`backend/db/datos_iniciales.sql` solo inserta datos de referencia (juegos, parches, meta_stats).
 Los usuarios, guias demo y foro los crea `backend/bin/seed.php` para generar hashes correctos
 en runtime:
 ```bash

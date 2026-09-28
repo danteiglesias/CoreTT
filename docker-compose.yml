@@ -11,8 +11,8 @@ services:
     # hablar con la base de datos. Publicarlo expone la BD a toda la red local.
     volumes:
       - dbdata:/var/lib/mysql
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./database/datos_iniciales.sql:/docker-entrypoint-initdb.d/02-datos.sql:ro
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./backend/db/datos_iniciales.sql:/docker-entrypoint-initdb.d/02-datos.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
       interval: 5s
