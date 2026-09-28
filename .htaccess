@@ -1,15 +1,54 @@
 # CoreTT - configuracion de Apache para docroot = raiz del proyecto.
-# Solo aplica si Apache permite override (AllowOverride All).
+# Solo aplica si Apache permite override (AllowOverride All). Docker ya lo
+# viene con AllowOverride All; en un Apache del sistema hay que configurarlo.
 
 Options -Indexes
 DirectoryIndex frontend/index.html
 
-# Headers de seguridad basicos
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-</IfModule>
+# Nunca servir el historial de Git: /.git/config expone el remoto y
+# /.git/objects el codigo fuente completo.
+RedirectMatch 404 /\.git
 
-<FilesMatch "\.(env|md|sql|json|lock)$">
+# Nunca servir la configuracion con credenciales de la base de datos.
+<FilesMatch "^\.env(\..*)?$">
     Require all denied
 </FilesMatch>
+
+# Archivos de proyecto que no son públicos.
+<FilesMatch "\.(sql|md|lock|ini|log|bak|example|dist)$">
+    Require all denied
+</FilesMatch>
+
+# Evitar que se listen los endpoints PHP de la API.
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# El codigo PHP de la API no debe servirse como texto plano.
+<FilesMatch "\.php$">
+    <IfModule mod_headers.c>
+        Header set X-Content-Type-Options "nosniff"
+    </IfModule>
+</FilesMatch>
+
+# Headers de seguridad
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "no-referrer"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+    # El frontend es HTML/CSS/JS propio, sin CDNs ni scripts inline, asi que
+    # puede restringir por completo las fuentes externas.
+    Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+
+    # Las respuestas de la API nunca deben quedar en caches compartidas.
+    <FilesMatch "\.php$">
+        Header always set Cache-Control "no-store"
+    </FilesMatch>
+
+    # Elimina la cabecera que anuncia la version de PHP.
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+</IfModule>

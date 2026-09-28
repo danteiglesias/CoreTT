@@ -34,7 +34,7 @@ async function loadPosts(reset) {
         });
 
         shownPosts = reset ? posts : shownPosts.concat(posts);
-        postsContainer.innerHTML = '';
+        container.innerHTML = '';
 
         if (!shownPosts.length) {
             container.innerHTML = '<div class="empty-state">Aun no hay posts. Se el primero en publicar!</div>';

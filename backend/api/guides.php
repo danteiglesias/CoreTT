@@ -97,8 +97,11 @@ function guides_select(): string
 
 function resolve_game_id(PDO $pdo, string $game): ?int
 {
-    $stmt = $pdo->prepare('SELECT id FROM juegos WHERE slug = :g OR nombre = :g LIMIT 1');
-    $stmt->execute([':g' => $game]);
+    // Cada marcador con nombre debe usarse una sola vez cuando
+    // PDO::ATTR_EMULATE_PREPARES esta desactivado: reutilizarlo lanza
+    // SQLSTATE[HY093] y convertia crear/editar/filtrar guias en un HTTP 500.
+    $stmt = $pdo->prepare('SELECT id FROM juegos WHERE slug = :slug OR nombre = :nombre LIMIT 1');
+    $stmt->execute([':slug' => $game, ':nombre' => $game]);
     $row = $stmt->fetch();
     return $row ? (int)$row['id'] : null;
 }
@@ -132,9 +135,9 @@ switch (true) {
         }
 
         // Detalle
-        if (isset($_GET['id'])) {
+        if (isset($_GET['id']) && is_scalar($_GET['id'])) {
             $stmt = $pdo->prepare(guides_select() . ' AND g.id = :id LIMIT 1');
-            $stmt->execute([':id' => (int)$_GET['id']]);
+            $stmt->execute([':id' => param_int('id')]);
             $guide = $stmt->fetch();
             if (!$guide) {
                 error_response('Guia no encontrada', 404);
@@ -172,8 +175,14 @@ switch (true) {
 
         $search = param_str('search');
         if ($search !== '') {
-            $where .= ' AND (g.titulo LIKE :q OR g.descripcion LIKE :q OR g.contenido LIKE :q)';
-            $params[':q'] = '%' . $search . '%';
+            $search = mb_substr($search, 0, MAX_BUSQUEDA);
+            // Marcadores distintos por columna: un mismo marcador nombrado
+            // repetido provoca SQLSTATE[HY093] sin emulacion de prepares.
+            $where .= ' AND (g.titulo LIKE :q1 OR g.descripcion LIKE :q2 OR g.contenido LIKE :q3)';
+            $like = '%' . escape_like($search) . '%';
+            $params[':q1'] = $like;
+            $params[':q2'] = $like;
+            $params[':q3'] = $like;
         }
 
         $sort = param_str('sort', 'recent');
@@ -212,32 +221,35 @@ switch (true) {
     /* ---------------- VOTAR ---------------- */
     case $method === 'POST' && $action === 'vote':
         require_auth();
-        $guideId = (int)($body['id'] ?? 0);
+        throttle('vote', (int)env('VOTE_MAX_PER_WINDOW', 300), (int)env('WRITE_WINDOW_SECONDS', 3600));
+        $guideId = (int)body_str($body, 'id', '0');
         if ($guideId <= 0) {
             error_response('ID de guia requerido', 422);
         }
-        json_response(apply_vote($guideId, (int)$me['id'], (int)($body['vote'] ?? 0)));
+        json_response(apply_vote($guideId, (int)$me['id'], (int)body_str($body, 'vote', '0')));
         break;
 
     /* ---------------- CREAR ---------------- */
     case $method === 'POST':
         require_auth();
+        throttle('guide_create', (int)env('GUIDE_MAX_PER_WINDOW', 20), (int)env('WRITE_WINDOW_SECONDS', 3600));
 
-        $game  = trim_str($body['game'] ?? '');
-        $patch = trim_str($body['patch'] ?? '');
+        $game  = trim_str(body_str($body, 'game'));
+        $patch = trim_str(body_str($body, 'patch'));
 
         $gameId = $game !== '' ? resolve_game_id($pdo, $game) : null;
         if ($gameId === null) {
             error_response('Juego invalido', 422, ['juego_id' => 'Selecciona un juego valido.']);
         }
 
-        $data = [
-            'titulo'      => $body['titulo'] ?? ($body['title'] ?? ''),
-            'descripcion' => $body['descripcion'] ?? ($body['description'] ?? ''),
-            'contenido'   => $body['contenido'] ?? ($body['content'] ?? ''),
+        $result = sanitize_guide([
+            'titulo'      => body_str_any($body, ['titulo', 'title']),
+            'descripcion' => body_str_any($body, ['descripcion', 'description']),
+            'contenido'   => body_str_any($body, ['contenido', 'content']),
             'juego_id'    => $gameId,
-        ];
-        bail_on_errors(validate_guide($data));
+        ]);
+        bail_on_errors($result['errores']);
+        $data = $result['datos'];
 
         $patchId = null;
         if ($patch !== '') {
@@ -253,14 +265,21 @@ switch (true) {
             'INSERT INTO guias (juego_id, usuario_id, titulo, descripcion, contenido, parche_id)
              VALUES (:g, :u, :t, :d, :c, :p)'
         );
-        $stmt->execute([
-            ':g' => $gameId,
-            ':u' => $me['id'],
-            ':t' => $data['titulo'],
-            ':d' => $data['descripcion'],
-            ':c' => $data['contenido'],
-            ':p' => $patchId,
-        ]);
+        try {
+            $stmt->execute([
+                ':g' => $gameId,
+                ':u' => $me['id'],
+                ':t' => $data['titulo'],
+                ':d' => $data['descripcion'],
+                ':c' => $data['contenido'],
+                ':p' => $patchId,
+            ]);
+        } catch (PDOException $e) {
+            if ($e->getCode() === '23000') {
+                error_response('No se pudo guardar la guia', 409);
+            }
+            throw $e;
+        }
 
         $id = (int)$pdo->lastInsertId();
         json_response(['success' => true, 'id' => $id], 201);
@@ -284,21 +303,22 @@ switch (true) {
             error_response('No tienes permiso para editar esta guia', 403);
         }
 
-        $game  = trim_str($body['game'] ?? '');
-        $patch = trim_str($body['patch'] ?? '');
+        $game  = trim_str(body_str($body, 'game'));
+        $patch = trim_str(body_str($body, 'patch'));
 
         $gameId = $game !== '' ? resolve_game_id($pdo, $game) : (int)$guide['juego_id'];
         if ($gameId === null) {
             error_response('Juego invalido', 422, ['juego_id' => 'Selecciona un juego valido.']);
         }
 
-        $data = [
-            'titulo'      => trim_str($body['titulo'] ?? ($body['title'] ?? $guide['titulo']), 150),
-            'descripcion' => trim_str($body['descripcion'] ?? ($body['description'] ?? $guide['descripcion']), 500),
-            'contenido'   => trim_text($body['contenido'] ?? ($body['content'] ?? $guide['contenido'])),
+        $result = sanitize_guide([
+            'titulo'      => body_str_any($body, ['titulo', 'title'], (string)$guide['titulo']),
+            'descripcion' => body_str_any($body, ['descripcion', 'description'], (string)($guide['descripcion'] ?? '')),
+            'contenido'   => body_str_any($body, ['contenido', 'content'], (string)$guide['contenido']),
             'juego_id'    => $gameId,
-        ];
-        bail_on_errors(validate_guide($data));
+        ]);
+        bail_on_errors($result['errores']);
+        $data = $result['datos'];
 
         $patchId = null;
         if ($patch !== '') {

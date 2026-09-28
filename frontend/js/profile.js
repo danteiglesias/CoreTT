@@ -47,7 +47,9 @@ function renderProfile(profile) {
     if (!content) return;
 
     const initial = (profile.name || '?').charAt(0).toUpperCase();
-    const isAdmin = Auth.getCurrentUser() && Auth.getCurrentUser().role === 'admin';
+    // El rol viene del propio perfil devuelto por el servidor, no del
+    // localStorage (editable desde el navegador).
+    const isAdmin = profile.role === 'admin';
 
     content.innerHTML = `
         <h2 class="section-title">Mi Perfil</h2>

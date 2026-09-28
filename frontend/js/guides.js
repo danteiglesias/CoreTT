@@ -40,7 +40,10 @@ async function loadGuides(reset) {
         if (currentPage === 1) {
             container.innerHTML = '';
         }
-        renderGuides(shownGuides, container, reset ? guides : null);
+        // Solo se pintan las guias recien recibidas al cargar mas: antes se
+        // re-renderizaba la lista completa en cada pagina (O(n^2) en el DOM)
+        // y se destruian los botones de voto, perdiendo clics en curso.
+        renderGuides(reset ? shownGuides : guides, container);
 
         updateLoadMore(guides.total || shownGuides.length);
     } catch (error) {
@@ -49,13 +52,15 @@ async function loadGuides(reset) {
     }
 }
 
-function renderGuides(guides, container, fresh) {
-    container.innerHTML = '';
-
+function renderGuides(guides, container) {
     if (!guides.length) {
-        container.innerHTML = '<div class="empty-state">No hay guias para esta seleccion.</div>';
+        if (!container.children.length) {
+            container.innerHTML = '<div class="empty-state">No hay guias para esta seleccion.</div>';
+        }
         return;
     }
+
+    const fragment = document.createDocumentFragment();
 
     guides.forEach((guide) => {
         const card = document.createElement('article');
@@ -63,7 +68,7 @@ function renderGuides(guides, container, fresh) {
 
         card.innerHTML = `
             <a class="guide-thumb" href="guide.html?id=${encodeURIComponent(guide.id)}">
-                <img src="${Core.escapeHtml(guide.image)}" alt="${Core.escapeHtml(guide.game)}">
+                <img src="${Core.escapeHtml(guide.image)}" alt="${Core.escapeHtml(guide.game)}" loading="lazy">
             </a>
             <span class="badge ${Core.escapeHtml(guide.gameClass)}">${Core.escapeHtml(guide.game)}</span>
             <h3><a href="guide.html?id=${encodeURIComponent(guide.id)}">${Core.escapeHtml(guide.title)}</a></h3>
@@ -78,8 +83,10 @@ function renderGuides(guides, container, fresh) {
                 </div>
             </div>
         `;
-        container.appendChild(card);
+        fragment.appendChild(card);
     });
+
+    container.appendChild(fragment);
 
     container.querySelectorAll('.vote-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {

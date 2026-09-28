@@ -12,7 +12,7 @@ const Auth = (() => {
         const savedUser = localStorage.getItem(USER_KEY);
         if (savedUser) {
             try {
-                currentUser = JSON.parse(savedUser);
+                currentUser = normalizeUser(JSON.parse(savedUser));
             } catch (e) {
                 currentUser = null;
             }
@@ -21,6 +21,59 @@ const Auth = (() => {
         bindNavbar();
         bindModalEvents();
         updateUI();
+
+        // El localStorage es editable por el usuario, así que la sesión se
+        // confirma contra el servidor: si el token caducó o fue revocado, la
+        // interfaz no debe seguir mostrando un panel de administrador.
+        refreshSession();
+    }
+
+    /**
+     * Normaliza la forma del usuario a un unico esquema (name/role/rank).
+     *
+     * El login devuelve campos en español (rol, rango) y el endpoint de
+     * perfil en inglés (role, rank). API ya normaliza, pero setSession
+     * tambien se llama desde otros puntos, asi que se normaliza aqui para
+     * que el resto del frontend dependa siempre de la misma forma.
+     */
+    function normalizeUser(user) {
+        if (!user || typeof user !== 'object') return null;
+        return {
+            id: user.id,
+            name: user.name || user.nombre || '',
+            email: user.email || '',
+            role: user.role || user.rol || 'user',
+            rank: user.rank !== undefined ? user.rank : (user.rango !== undefined ? user.rango : null),
+            reputation: user.reputation !== undefined ? user.reputation : (user.reputacion || 0)
+        };
+    }
+
+    /**
+     * Confirma la sesion contra el servidor y actualiza el rol real.
+     * Si el token ya no es valido, limpia el estado local.
+     */
+    async function refreshSession() {
+        if (!getToken()) {
+            // Sin token no puede haber sesion valida: se limpia tambien el
+            // objeto de usuario que hubiera quedado en localStorage.
+            if (currentUser !== null) {
+                clearSession();
+            }
+            return null;
+        }
+        try {
+            const profile = await API.getProfile();
+            currentUser = normalizeUser(profile);
+            localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+            updateUI();
+            return currentUser;
+        } catch (error) {
+            // 401: la sesion ya no existe en el servidor.
+            if (error && error.status === 401) {
+                clearSession();
+            }
+            return null;
+        }
     }
 
     /* ---------- Menú móvil ---------- */
@@ -80,6 +133,10 @@ const Auth = (() => {
         return currentUser !== null;
     }
 
+    function isAdmin() {
+        return currentUser !== null && currentUser.role === 'admin';
+    }
+
     function bindModalEvents() {
         const loginBtn = document.getElementById('loginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
@@ -89,16 +146,20 @@ const Auth = (() => {
         const signupForm = document.getElementById('signupForm');
 
         // Abrir modal de login
-        loginBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            openModal('loginModal');
-        });
+        if (loginBtn) {
+            loginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal('loginModal');
+            });
+        }
 
         // Cerrar sesión
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            logout();
-        });
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+        }
 
         // Cambiar entre modales
         const signupLink = document.getElementById('signupLink');
@@ -176,7 +237,7 @@ const Auth = (() => {
             showError(e.target, '');
             const result = await API.register(name, email, password);
 
-if (result.success) {
+            if (result.success) {
                 closeModal('signupModal');
                 e.target.reset();
                 const message = result.message || 'Cuenta creada correctamente. Ahora puedes iniciar sesion.';
@@ -195,20 +256,30 @@ if (result.success) {
 
     function setSession(token, user) {
         if (token) localStorage.setItem(TOKEN_KEY, token);
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-        currentUser = user;
+        currentUser = normalizeUser(user);
+        localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
         updateUI();
     }
 
-    function logout() {
-        // Intenta invalidar la sesion en el servidor (best-effort)
-        if (window.API && API.logout) {
-            API.logout().catch(() => {});
-        }
+    function clearSession() {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
         currentUser = null;
         updateUI();
+    }
+
+    async function logout() {
+        // Se espera a que el servidor invalide la sesion antes de limpiar el
+        // estado local: hacerlo al reves dejaba tokens de 7 dias vivos si la
+        // peticion se cancelaba al navegar.
+        if (window.API && API.logout) {
+            try {
+                await API.logout();
+            } catch (error) {
+                // Best-effort: la sesion local se limpia igual.
+            }
+        }
+        clearSession();
         if (window.Core) Core.notify('Sesion cerrada');
     }
 
@@ -232,6 +303,14 @@ if (result.success) {
         openModal,
         closeModal,
         setSession,
+        clearSession,
+        refreshSession,
+        isAdmin,
         logout
     };
 })();
+
+// "const Auth = ..." crea un binding global lexical, no una propiedad de
+// window. Sin esta linea, cualquier comprobacion "window.Auth && ..." desde
+// otro script daria undefined y se perderia el token en cada peticion.
+window.Auth = Auth;

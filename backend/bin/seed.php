@@ -49,17 +49,35 @@ echo "Juegos listos: " . implode(', ', array_keys($gameIds)) . "\n";
    Usuarios
 --------------------------------------------------------------------- */
 $adminEmail = env('ADMIN_EMAIL', 'admin@corett.com');
-$adminPass  = env('ADMIN_PASSWORD', 'admin1234');
+// Sin ADMIN_PASSWORD en el .env no se crea ni se reescribe la cuenta: es
+// preferible no tener admin a tener una con contrasena publicada en el repo.
+$adminPass  = (string)env('ADMIN_PASSWORD', '');
+$hasAdminPass = $adminPass !== '';
 
-function ensure_user(PDO $pdo, string $nombre, string $email, string $password, string $rol, ?string $rango): int
+function ensure_user(PDO $pdo, string $nombre, string $email, string $password, string $rol, ?string $rango, bool $syncPassword = false): int
 {
-    $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE email = :e OR nombre = :n LIMIT 1');
+    $email = strtolower(trim($email));
+    $stmt = $pdo->prepare('SELECT id, password_hash FROM usuarios WHERE email = :e OR nombre = :n LIMIT 1');
     $stmt->execute([':e' => $email, ':n' => $nombre]);
     if ($row = $stmt->fetch()) {
         $id = (int)$row['id'];
-        // Actualizamos hash y rol del admin para reflejar el .env actual
-        $stmt = $pdo->prepare('UPDATE usuarios SET rol = :r, rango = COALESCE(:rango, rango) WHERE id = :id');
-        $stmt->execute([':r' => $rol, ':rango' => $rango, ':id' => $id]);
+        // El hash solo se rehace si el .env cambio realmente: antes el
+        // comentario prometia esto pero la UPDATE no tocaba el password, asi
+        // que cambiar ADMIN_PASSWORD no tenia ningun efecto tras el primer seed.
+        if ($syncPassword && !password_verify($password, (string)$row['password_hash'])) {
+            $stmt = $pdo->prepare(
+                'UPDATE usuarios SET rol = :r, rango = COALESCE(:rango, rango), password_hash = :p WHERE id = :id'
+            );
+            $stmt->execute([
+                ':r'     => $rol,
+                ':rango' => $rango,
+                ':p'     => password_hash($password, PASSWORD_DEFAULT),
+                ':id'    => $id,
+            ]);
+        } else {
+            $stmt = $pdo->prepare('UPDATE usuarios SET rol = :r, rango = COALESCE(:rango, rango) WHERE id = :id');
+            $stmt->execute([':r' => $rol, ':rango' => $rango, ':id' => $id]);
+        }
         return $id;
     }
 
@@ -76,9 +94,17 @@ function ensure_user(PDO $pdo, string $nombre, string $email, string $password, 
     return (int)$pdo->lastInsertId();
 }
 
-// Use el password configurado en .env para el admin demo
-$adminId = ensure_user($pdo, 'Admin', $adminEmail, $adminPass, 'admin', 'Diamante');
-echo "Admin listo: {$adminEmail}\n";
+// El admin sincroniza su contrasena con el .env; los usuarios demo no.
+if ($hasAdminPass) {
+    $adminId = ensure_user($pdo, 'Admin', $adminEmail, $adminPass, 'admin', 'Diamante', true);
+    echo "Admin listo: {$adminEmail}\n";
+} else {
+    $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE email = :e OR nombre = :n LIMIT 1');
+    $stmt->execute([':e' => $adminEmail, ':n' => 'Admin']);
+    $row = $stmt->fetch();
+    $adminId = $row ? (int)$row['id'] : 0;
+    echo "Admin omitido: define ADMIN_PASSWORD en .env para crearlo.\n";
+}
 
 $demoPass = env('DEMO_PASSWORD', 'password123');
 $demoUsers = [
@@ -189,7 +215,7 @@ $samplePosts = [
         'body'  => "Soy nuevo y no se por quien empezar. Recomendaciones de campeones sencillos que ensenen conceptos base.",
     ],
     [
-        'user'  => 'TeamPilot',
+        'user'  => 'SmokeMaster',
         'title' => 'Economia en CS2: estrategias de ecos',
         'body'  => "Cuando conviene hacer eco completo y cuando forzar compra? Compartid vuestras reglas de oro.",
     ],
@@ -197,9 +223,15 @@ $samplePosts = [
 
 $postIds = [];
 foreach ($samplePosts as $p) {
+    // Sin esta comprobacion, una entrada con usuario desconocido pasaba null a
+    // un parametro int y abortaba todo el seed con un TypeError.
+    if (!isset($demoIds[$p['user']])) {
+        fwrite(STDERR, "Usuario desconocido para el post \"{$p['title']}\": {$p['user']}\n");
+        continue;
+    }
     $postIds[] = ensure_post($pdo, $demoIds[$p['user']], $p['title'], $p['body']);
 }
-echo 'Posts demo: ' . count($samplePosts) . "\n";
+echo 'Posts demo: ' . count($postIds) . "\n";
 
 /* --- Comentarios de ejemplo --- */
 $stmt = $pdo->query('SELECT COUNT(*) AS total FROM foro_comentarios');
@@ -216,7 +248,7 @@ if (!$hasComments && $postIds) {
         'INSERT INTO foro_comentarios (post_id, usuario_id, contenido) VALUES (:p, :u, :c)'
     );
     foreach ($comments as $c) {
-        if ($c['post'] > 0) {
+        if ($c['post'] > 0 && isset($demoIds[$c['user']])) {
             $stmt->execute([':p' => $c['post'], ':u' => $demoIds[$c['user']], ':c' => $c['text']]);
         }
     }
@@ -235,6 +267,11 @@ if ((int)$stmt->fetch()['total'] === 0) {
     $added = 0;
     foreach ($guideRows as $i => $g) {
         $voter = $demoIds[$voterNames[$i % count($voterNames)]];
+        // La API prohibe votarse a si mismo; el seed debe respetar la misma
+        // regla o crearia reputacion que la aplicacion no permite generar.
+        if ((int)$g['usuario_id'] === (int)$voter) {
+            continue;
+        }
         try {
             $stmt->execute([':g' => $g['id'], ':u' => $voter]);
             $added++;

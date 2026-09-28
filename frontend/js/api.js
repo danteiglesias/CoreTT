@@ -96,13 +96,17 @@ const API = (() => {
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     async function request(endpoint, method, body, authenticated) {
-        const options = {
-            method: method || 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        };
+        method = method || 'GET';
+        const options = { method, headers: {} };
+
+        if (method !== 'GET' && method !== 'HEAD') {
+            // Solo en peticiones con cuerpo: mandar Content-Type en un GET
+            // fuerza un preflight CORS innecesario al cruzar origenes.
+            options.headers['Content-Type'] = 'application/json';
+        }
 
         if (authenticated) {
-            const token = Auth ? Auth.getToken() : null;
+            const token = (window.Auth && Auth.getToken()) || null;
             if (token) {
                 options.headers['Authorization'] = 'Bearer ' + token;
             }
@@ -116,7 +120,7 @@ const API = (() => {
         try {
             response = await fetch(BASE_URL + endpoint, options);
         } catch (err) {
-            throw new Error('No se pudo conectar con el servidor. Verifica que el backend este corriendo.');
+            throw withStatus(new Error('No se pudo conectar con el servidor. Verifica que el backend este corriendo.'), 0);
         }
 
         let data = null;
@@ -127,9 +131,19 @@ const API = (() => {
         }
 
         if (!response.ok) {
-            throw new Error((data && data.error) || 'Error ' + response.status + ' en la peticion');
+            // Se propaga el status: el cliente necesita distinguir un 401
+            // (sesion caducada) de un 500.
+            throw withStatus(
+                new Error((data && data.error) || 'Error ' + response.status + ' en la peticion'),
+                response.status
+            );
         }
         return data;
+    }
+
+    function withStatus(error, status) {
+        error.status = status;
+        return error;
     }
 
     function enrichGuide(guide) {
@@ -199,7 +213,7 @@ const API = (() => {
             return guides;
         }
         await delay(150);
-        const user = Auth ? Auth.getCurrentUser() : null;
+        const user = window.Auth ? Auth.getCurrentUser() : null;
         const guides = (user ? demoDB.guides.filter((g) => g.author === user.name) : [])
             .map(enrichGuide);
         guides.total = guides.length;
@@ -220,7 +234,7 @@ const API = (() => {
             return request('guides.php', 'POST', data, true);
         }
         await delay(200);
-        const user = Auth ? Auth.getCurrentUser() : null;
+        const user = window.Auth ? Auth.getCurrentUser() : null;
         demoDB.guides.unshift({
             id: demoDB.guides.length + 100,
             title: data.title,
@@ -291,7 +305,7 @@ const API = (() => {
             return request('forum.php', 'POST', data, true);
         }
         await delay(200);
-        const user = Auth ? Auth.getCurrentUser() : null;
+        const user = window.Auth ? Auth.getCurrentUser() : null;
         session.createdPosts.unshift({
             id: demoDB.posts.length + session.createdPosts.length + 200,
             title: data.title,
@@ -310,7 +324,7 @@ const API = (() => {
             return request('forum.php?action=comment', 'POST', { postId, text }, true);
         }
         await delay(120);
-        const user = Auth ? Auth.getCurrentUser() : null;
+        const user = window.Auth ? Auth.getCurrentUser() : null;
         const post = [...demoDB.posts, ...session.createdPosts].find((p) => p.id === Number(postId));
         if (post) {
             post.comments.push({
@@ -374,7 +388,9 @@ const API = (() => {
             return { ...data, user: normalizeUser(data.user) };
         }
         await delay(400);
-        if (email.toLowerCase() === 'admin@corett.com') {
+        // El modo demo concedia rol admin solo con teclear el email, sin
+        // comprobar la contrasena. Ahora exige una contrasena explicita.
+        if (email.toLowerCase() === 'admin@corett.com' && password === 'demo') {
             return { success: true, token: 'demo-admin-token', user: demoDB.users[0] };
         }
         if (email && password.length >= 4) {
@@ -443,7 +459,7 @@ const API = (() => {
             return normalizeUser(await request('users.php?action=profile', 'GET', null, true));
         }
         await delay(150);
-        const user = Auth ? Auth.getCurrentUser() : null;
+        const user = window.Auth ? Auth.getCurrentUser() : null;
         if (!user) throw new Error('No autenticado');
         return {
             name: user.name,
@@ -492,3 +508,7 @@ const API = (() => {
         logout
     };
 })();
+
+// Expuesto en window para que el orden de carga de los scripts no importe
+// (igual que Core).
+window.API = API;

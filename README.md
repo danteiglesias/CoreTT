@@ -39,14 +39,20 @@ CORETT es una pagina web impulsada por la comunidad, disenada para ir mas alla d
 
    ```bash
    mysql -u root -p < database/schema.sql
-   mysql -u root -p corett < database/datos_iniciales.sql
+   mysql -u root, -p corett < database/datos_iniciales.sql
    ```
+
+   > `schema.sql` **borra las 10 tablas** antes de crearlas: es solo para una
+   > base vacia. Si ya tienes datos, usa `database/migraciones.sql`, que es
+   > idempotente y no destruye nada.
 
 3. Configura el entorno: copia `.env.example` a `.env` y ajusta las credenciales:
 
    ```bash
    cp .env.example .env
    ```
+
+   Como minimo cambia `DB_PASSWORD` y define `ADMIN_PASSWORD`.
 
 4. Instala el usuario administrador y los datos demo (genera los hashes de password en runtime):
 
@@ -56,25 +62,29 @@ CORETT es una pagina web impulsada por la comunidad, disenada para ir mas alla d
 
 5. Abre `http://localhost/frontend/` (o la ruta segun tu docroot).
 
-### Usuario administrador por defecto
+### Usuario administrador
 
-| Campo    | Valor                          |
-|----------|--------------------------------|
-| Email    | `admin@corett.com`             |
-| Password | `admin1234` (o el de tu `.env`)|
+El administrador se crea a partir de `ADMIN_EMAIL` y `ADMIN_PASSWORD` del `.env`.
+Si `ADMIN_PASSWORD` esta vacio el seed **no** crea la cuenta, para no dejar un
+administrador con una contrasena publicada en el repositorio.
 
-> Cambia estas credenciales en produccion.
+El seed es idempotente: se puede repetir sin duplicar datos, y si cambias
+`ADMIN_PASSWORD` y lo vuelves a ejecutar, actualiza el hash del administrador.
 
 ## Instalacion con Docker Compose
 
 ```bash
 cp .env.example .env
+# define DB_PASSWORD, DB_ROOT_PASSWORD y ADMIN_PASSWORD en .env
 docker compose up -d --build
 docker compose exec web php backend/bin/seed.php
 # Abre http://localhost:8080/frontend/
 ```
 
 El contenedor `db` importa automaticamente `database/schema.sql` y `database/datos_iniciales.sql` la primera vez que se levanta.
+
+El puerto de MySQL no se publica al host: solo el contenedor `web` necesita
+acceder a la base de datos.
 
 ## Estructura del proyecto
 
@@ -86,7 +96,8 @@ backend/
   includes/       # boot (CORS/errores), functions, validations, auth, votes
   index.php       # Health check de la API
 database/
-  schema.sql      # Esquema completo del modelo relacional
+  schema.sql      # Esquema completo del modelo relacional (DESTRUCTIVO)
+  migraciones.sql # Migraciones idempotentes para bases ya existentes
   datos_iniciales.sql  # Juegos, parches y meta stats de referencia
 frontend/
   index.html            # Portada
@@ -97,8 +108,10 @@ frontend/
 docs/
   README.md        # Guia de uso de la API
   ESQUEMA_BD.md    # Detalle del modelo de datos
+  SEGURIDAD.md     # Medidas aplicadas y pendientes conocidos
 tests/
   run_tests.php    # Smoke test de la API (HTTP)
+  lint.php         # Lint de todos los PHP (funciona en Windows y Linux)
 ```
 
 ## API
@@ -130,10 +143,35 @@ Base por defecto: `/backend/api/`. Todos los endpoints responden JSON. Los metod
 Smoke test por HTTP (requiere el servidor levantado):
 
 ```bash
-php tests/run_tests.php http://localhost/backend/api/
+php tests/run_tests.php http://localhost:8080/backend/api/
 ```
 
 Si la API no responde, el script informa `SKIP` y termina con codigo 0.
+
+Lint de sintaxis de todos los PHP (sin dependencias externas, funciona igual
+en Windows que en Linux):
+
+```bash
+php tests/lint.php
+# o: composer lint
+```
+
+## Seguridad
+
+Resumen de las medidas aplicadas y de lo que queda pendiente de decision de
+producto: [docs/SEGURIDAD.md](docs/SEGURIDAD.md).
+
+Puntos que conviene revisar antes de exponer el sitio:
+
+- `APP_ENV=production` (por defecto). En `development` la API devuelve el
+  mensaje real de los errores, incluidos los de PDO/MySQL.
+- `ALLOWED_ORIGIN` debe apuntar a tu dominio real. Sin valor, la API no envia
+  ninguna cabecera CORS (solo mismo origen).
+- `TRUSTED_PROXIES` vacio salvo que tengas un proxy propio: es lo que impide
+  que un cliente falsee su IP con `X-Forwarded-For` y evade el rate limiting.
+- Apache fuera de Docker necesita `AllowOverride All` para que el `.htaccess`
+  se aplique. El `Dockerfile` ya lo configura y ademas bloquea `.git` y `.env`
+  a nivel de servidor.
 
 ## Roadmap / trabajo pendiente
 
@@ -141,4 +179,6 @@ Si la API no responde, el script informa `SKIP` y termina con codigo 0.
 - Subcategorias por juego (mapas, campeones, armas) y panel de `meta_stats`.
 - Paginacion del panel de administracion.
 - Notificaciones, insignias y rango verificado por juego.
+- Migrar el token de `localStorage` a una cookie de sesion completa, para que
+  un XSS no pueda robarlo.
 - CI (GitHub Actions) para lint de PHP y smoke tests.

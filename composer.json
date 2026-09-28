@@ -11,7 +11,7 @@
     "scripts": {
         "seed": "php backend/bin/seed.php",
         "test": "php tests/run_tests.php",
-        "lint": "find backend tests -name '*.php' -exec php -l {} \\;"
+        "lint": "php tests/lint.php"
     },
     "config": {
         "sort-packages": true

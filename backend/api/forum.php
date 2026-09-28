@@ -66,13 +66,18 @@ $pdo    = db();
 switch (true) {
 
     /* ---------------- LISTADO ---------------- */
-    case $method === 'GET' && !isset($_GET['id']):
+    case $method === 'GET' && !(isset($_GET['id']) && is_scalar($_GET['id'])):
         $search = param_str('search');
         $where  = '';
         $params = [];
         if ($search !== '') {
-            $where = ' WHERE (p.titulo LIKE :q OR p.contenido LIKE :q)';
-            $params[':q'] = '%' . $search . '%';
+            $search = mb_substr($search, 0, MAX_BUSQUEDA);
+            // Marcadores distintos: reutilizar uno con emulacion de prepares
+            // desactivada lanza SQLSTATE[HY093].
+            $where = ' WHERE (p.titulo LIKE :q1 OR p.contenido LIKE :q2)';
+            $like = '%' . escape_like($search) . '%';
+            $params[':q1'] = $like;
+            $params[':q2'] = $like;
         }
 
         $totalStmt = $pdo->prepare('SELECT COUNT(*) AS total FROM foro_posts p' . $where);
@@ -98,9 +103,10 @@ switch (true) {
         break;
 
     /* ---------------- DETALLE CON COMENTARIOS ---------------- */
-    case $method === 'GET' && isset($_GET['id']):
+    case $method === 'GET' && isset($_GET['id']) && is_scalar($_GET['id']):
+        $postId = param_int('id');
         $stmt = $pdo->prepare(posts_select() . ' WHERE p.id = :id LIMIT 1');
-        $stmt->execute([':id' => (int)$_GET['id']]);
+        $stmt->execute([':id' => $postId]);
         $post = $stmt->fetch();
         if (!$post) {
             error_response('Post no encontrado', 404);
@@ -113,7 +119,7 @@ switch (true) {
                FROM foro_comentarios c JOIN usuarios u ON u.id = c.usuario_id
               WHERE c.post_id = :id ORDER BY c.creado_en ASC'
         );
-        $stmt->execute([':id' => (int)$_GET['id']]);
+        $stmt->execute([':id' => $postId]);
         $comments = array_map('comment_payload', $stmt->fetchAll());
 
         $payload = post_payload($post);
@@ -132,8 +138,9 @@ switch (true) {
     /* ---------------- COMENTAR ---------------- */
     case $method === 'POST' && $action === 'comment':
         require_auth();
+        throttle('comment', (int)env('COMMENT_MAX_PER_WINDOW', 60), (int)env('WRITE_WINDOW_SECONDS', 3600));
 
-        $postId = (int)($body['postId'] ?? 0);
+        $postId = (int)body_str($body, 'postId', '0');
         if ($postId <= 0) {
             error_response('ID de post requerido', 422);
         }
@@ -144,7 +151,13 @@ switch (true) {
             error_response('Post no encontrado', 404);
         }
 
-        $text = trim_text($body['text'] ?? ($body['contenido'] ?? ''), 2000);
+        $rawText = body_str_any($body, ['text', 'contenido']);
+        if (mb_strlen($rawText) > MAX_COMENTARIO) {
+            error_response('Datos invalidos', 422, [
+                'texto' => 'El comentario no puede superar los ' . MAX_COMENTARIO . ' caracteres.',
+            ]);
+        }
+        $text = trim_text($rawText, MAX_COMENTARIO);
         bail_on_errors(validate_comment($text));
 
         $stmt = $pdo->prepare(
@@ -166,12 +179,14 @@ switch (true) {
     /* ---------------- CREAR HILO ---------------- */
     case $method === 'POST':
         require_auth();
+        throttle('post_create', (int)env('POST_MAX_PER_WINDOW', 20), (int)env('WRITE_WINDOW_SECONDS', 3600));
 
-        $data = [
-            'titulo'    => $body['titulo'] ?? ($body['title'] ?? ''),
-            'contenido' => $body['contenido'] ?? ($body['body'] ?? ''),
-        ];
-        bail_on_errors(validate_post($data));
+        $result = sanitize_post([
+            'titulo'    => body_str_any($body, ['titulo', 'title']),
+            'contenido' => body_str_any($body, ['contenido', 'body']),
+        ]);
+        bail_on_errors($result['errores']);
+        $data = $result['datos'];
 
         $stmt = $pdo->prepare('INSERT INTO foro_posts (usuario_id, titulo, contenido) VALUES (:u, :t, :c)');
         $stmt->execute([':u' => $me['id'], ':t' => $data['titulo'], ':c' => $data['contenido']]);
@@ -199,11 +214,12 @@ switch (true) {
             error_response('No tienes permiso para editar este post', 403);
         }
 
-        $data = [
-            'titulo'    => trim_str($body['titulo'] ?? ($body['title'] ?? $post['titulo']), 150),
-            'contenido' => trim_text($body['contenido'] ?? ($body['body'] ?? $post['contenido'])),
-        ];
-        bail_on_errors(validate_post($data));
+        $result = sanitize_post([
+            'titulo'    => body_str_any($body, ['titulo', 'title'], (string)$post['titulo']),
+            'contenido' => body_str_any($body, ['contenido', 'body'], (string)$post['contenido']),
+        ]);
+        bail_on_errors($result['errores']);
+        $data = $result['datos'];
 
         $stmt = $pdo->prepare('UPDATE foro_posts SET titulo = :t, contenido = :c WHERE id = :id');
         $stmt->execute([':t' => $data['titulo'], ':c' => $data['contenido'], ':id' => $postId]);

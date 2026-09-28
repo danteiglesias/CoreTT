@@ -1,5 +1,10 @@
 -- =====================================================================
 -- CoreTT - Esquema de base de datos (MySQL 5.7+ / MariaDB 10.3+)
+--
+-- ATENCION: este archivo DESTRUYE los datos. Contiene DROP TABLE sobre las
+-- 10 tablas, asi que solo debe usarse en una base vacia o para reinstalar
+-- desde cero. Para una base ya existente usa database/migraciones.sql.
+--
 -- Ejecuta primero schema.sql y despues datos_iniciales.sql.
 -- =====================================================================
 SET NAMES utf8mb4;
@@ -108,6 +113,9 @@ CREATE TABLE `votos` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_votos_guia_usuario` (`guia_id`, `usuario_id`),
   KEY `fk_votos_usuario` (`usuario_id`),
+  -- Sin esta restriccion, un valor fuera de {-1, 1} (por ejemplo desde una
+  -- futura consulta o un script manual) contaminaria el SUM(valor).
+  CONSTRAINT `ck_votos_valor` CHECK (`valor` IN (-1, 1)),
   CONSTRAINT `fk_votos_guia` FOREIGN KEY (`guia_id`)
     REFERENCES `guias` (`id`) ON UPDATE CASCADE ON DELETE CASCADE,
   CONSTRAINT `fk_votos_usuario` FOREIGN KEY (`usuario_id`)
@@ -158,6 +166,9 @@ CREATE TABLE `meta_stats` (
   `actualizado_en` DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fk_meta_juego` (`juego_id`),
+  -- Sin esta clave unica, el ON DUPLICATE KEY UPDATE de datos_iniciales.sql
+  -- nunca coincidia y cada reimport duplicaba las 7 filas de stats.
+  UNIQUE KEY `uq_meta_dato` (`juego_id`, `entidad`, `categoria`, `dato`),
   CONSTRAINT `fk_meta_juego` FOREIGN KEY (`juego_id`)
     REFERENCES `juegos` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

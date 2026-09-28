@@ -7,20 +7,40 @@ document.addEventListener('DOMContentLoaded', () => {
     guardAdmin();
 });
 
-function guardAdmin() {
+function showAccessDenied() {
+    const content = document.getElementById('adminContent');
+    if (!content) return;
+    const user = Auth.getCurrentUser();
+    content.innerHTML = `
+        <h2 class="section-title">Acceso Restringido</h2>
+        <div class="alert alert-danger">
+            Esta area es solo para administradores.
+            ${user ? '<a href="profile.html" style="color:inherit;">Volver a mi perfil</a>' : ''}
+        </div>
+    `;
+}
+
+async function guardAdmin() {
     const content = document.getElementById('adminContent');
     if (!content) return;
 
-    const user = Auth.getCurrentUser();
+    if (!Auth.isLoggedIn()) {
+        showAccessDenied();
+        return;
+    }
 
-    if (!user || user.role !== 'admin') {
-        content.innerHTML = `
-            <h2 class="section-title">Acceso Restringido</h2>
-            <div class="alert alert-danger">
-                Esta area es solo para administradores.
-                ${user ? '<a href="profile.html" style="color:inherit;">Volver a mi perfil</a>' : ''}
-            </div>
-        `;
+    // El rol se pide al servidor, no se lee del localStorage: ese valor es
+    // editable desde el navegador, asi que usarlo como decision de acceso
+    // permitiria abrir el panel admin escribiendo role:"admin" a mano.
+    // (El backend igual valida require_admin, pero la UI no debe mentir.)
+    try {
+        const profile = await API.getProfile();
+        if (!profile || profile.role !== 'admin') {
+            showAccessDenied();
+            return;
+        }
+    } catch (error) {
+        showAccessDenied();
         return;
     }
 

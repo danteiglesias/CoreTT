@@ -17,10 +17,9 @@ $body   = get_json_body();
 $me     = current_user();
 $pdo    = db();
 
-$guideId = (int)($_GET['guide'] ?? $body['guide'] ?? 0);
-$gameId  = param_int('id', 0, array_merge($_GET, $body));
+$guideId = param_int('guide', 0, array_merge($_GET, $body));
 if ($guideId <= 0) {
-    $guideId = $gameId;
+    $guideId = param_int('id', 0, array_merge($_GET, $body));
 }
 if ($guideId <= 0) {
     error_response('Parametro guide requerido', 422);
@@ -51,7 +50,8 @@ switch ($method) {
 
     case 'POST':
         require_auth();
-        $vote = (int)($body['vote'] ?? 0);
+        throttle('vote', (int)env('VOTE_MAX_PER_WINDOW', 300), (int)env('WRITE_WINDOW_SECONDS', 3600));
+        $vote = (int)body_str($body, 'vote', '0');
         json_response(apply_vote($guideId, (int)$me['id'], $vote));
         break;
 

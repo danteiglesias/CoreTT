@@ -15,7 +15,20 @@ $action = param_str('action');
 $pdo    = db();
 
 if ($method !== 'GET') {
-    json_response(['error' => 'Metodo no permitido'], 405);
+    error_response('Metodo no permitido', 405);
+}
+
+/**
+ * Busca un juego por slug o por nombre.
+ */
+function find_game(PDO $pdo, string $game): ?array
+{
+    // Marcadores separados: reutilizar el mismo marcador nombrado con
+    // PDO::ATTR_EMULATE_PREPARES desactivado lanza SQLSTATE[HY093].
+    $stmt = $pdo->prepare('SELECT id, slug, nombre FROM juegos WHERE slug = :slug OR nombre = :nombre LIMIT 1');
+    $stmt->execute([':slug' => $game, ':nombre' => $game]);
+    $row = $stmt->fetch();
+    return $row ?: null;
 }
 
 /* -------- Meta stats por juego -------- */
@@ -25,15 +38,36 @@ if ($action === 'stats') {
         error_response('Parametro game requerido', 422);
     }
 
-    $stmt = $pdo->prepare(
-        'SELECT m.entidad, m.categoria, m.dato, m.valor, m.actualizado_en
-           FROM meta_stats m JOIN juegos j ON j.id = m.juego_id
-          WHERE j.slug = :g OR j.nombre = :g
-          ORDER BY m.categoria, m.entidad'
-    );
-    $stmt->execute([':g' => $game]);
+    $juego = find_game($pdo, mb_substr($game, 0, MAX_BUSQUEDA));
+    if (!$juego) {
+        error_response('Juego no encontrado', 404);
+    }
 
-    json_response(['game' => $game, 'stats' => $stmt->fetchAll()]);
+    $stmt = $pdo->prepare(
+        'SELECT entidad, categoria, dato, valor, actualizado_en
+           FROM meta_stats
+          WHERE juego_id = :id
+          ORDER BY categoria, entidad'
+    );
+    $stmt->execute([':id' => $juego['id']]);
+
+    $stats = array_map(function ($s) {
+        return [
+            'entity'    => $s['entidad'],
+            'category'  => $s['categoria'],
+            'stat'      => $s['dato'],
+            'value'     => $s['valor'],
+            'updated'   => date_only($s['actualizado_en']),
+        ];
+    }, $stmt->fetchAll());
+
+    // Se devuelve el nombre canonico de la BD, nunca el parametro recibido:
+    // reflejarlo crudo convertia la respuesta en un sink de contenido.
+    json_response([
+        'game'  => $juego['nombre'],
+        'slug'  => $juego['slug'],
+        'stats' => $stats,
+    ]);
 }
 
 /* -------- Listado de juegos -------- */

@@ -20,13 +20,24 @@ $body   = get_json_body();
 $me     = current_user();
 $pdo    = db();
 
+/**
+ * Impide quedarse sin ningun administrador activo.
+ */
+function ensure_not_last_admin(PDO $pdo): void
+{
+    $stmt = $pdo->query("SELECT COUNT(*) AS total FROM usuarios WHERE rol = 'admin'");
+    if ((int)$stmt->fetch()['total'] <= 1) {
+        error_response('Debe existir al menos un administrador', 422);
+    }
+}
+
 switch (true) {
 
     /* ---------------- REGISTRO ---------------- */
     case $method === 'POST' && $action === 'register':
-        $name     = trim_str($body['nombre'] ?? ($body['name'] ?? ''));
-        $email    = trim_str($body['email'] ?? '');
-        $password = $body['password'] ?? '';
+        $name     = trim_str(body_str_any($body, ['nombre', 'name']));
+        $email    = normalize_email(body_str($body, 'email'));
+        $password = body_str($body, 'password');
 
         $user = register_user($name, $email, $password);
 
@@ -39,8 +50,8 @@ switch (true) {
 
     /* ---------------- LOGIN ---------------- */
     case $method === 'POST' && $action === 'login':
-        $email    = trim_str($body['email'] ?? '');
-        $password = $body['password'] ?? '';
+        $email    = normalize_email(body_str($body, 'email'));
+        $password = body_str($body, 'password');
         json_response(attempt_login($email, $password));
         break;
 
@@ -55,12 +66,26 @@ switch (true) {
     case $method === 'PUT' && $action === 'profile':
         require_auth();
 
-        $nombre = trim_str($body['nombre'] ?? ($body['name'] ?? $me['nombre']), 50);
-        $rango  = trim_str($body['rango'] ?? ($body['rank'] ?? $me['rango'] ?? ''), 50);
+        $rawNombre = body_str_any($body, ['nombre', 'name'], (string)$me['nombre']);
+        $rawRango  = body_str_any($body, ['rango', 'rank'], (string)($me['rango'] ?? ''));
 
-        if ($nombre === '' || mb_strlen($nombre) < 3) {
-            error_response('El nombre debe tener al menos 3 caracteres', 422);
+        $errors = [];
+        if (mb_strlen($rawNombre) > MAX_NOMBRE) {
+            $errors['nombre'] = 'El nombre no puede superar los ' . MAX_NOMBRE . ' caracteres.';
         }
+        if (mb_strlen($rawRango) > MAX_RANGO) {
+            $errors['rango'] = 'El rango no puede superar los ' . MAX_RANGO . ' caracteres.';
+        }
+        bail_on_errors($errors);
+
+        $nombre = trim_str($rawNombre, MAX_NOMBRE);
+        $rango  = trim_str($rawRango, MAX_RANGO);
+
+        $nameErrors = validate_name($nombre);
+        if ($nombre === '') {
+            $nameErrors['nombre'] = 'El nombre es obligatorio.';
+        }
+        bail_on_errors($nameErrors);
 
         // Si el nombre cambio, verificar unicidad
         if ($nombre !== $me['nombre']) {
@@ -136,6 +161,12 @@ switch (true) {
             error_response('No puedes cambiar tu propio rol', 422);
         }
 
+        // Sin esta comprobacion, degradar al unico admin deja el sitio
+        // sin ninguna cuenta capaz de administrarlo.
+        if ($target['rol'] === 'admin' && $rol !== 'admin') {
+            ensure_not_last_admin($pdo);
+        }
+
         $stmt = $pdo->prepare('UPDATE usuarios SET rol = :r WHERE id = :id');
         $stmt->execute([':r' => $rol, ':id' => $userId]);
 
@@ -154,15 +185,20 @@ switch (true) {
             error_response('No puedes eliminar tu propia cuenta', 422);
         }
 
-        $stmt = $pdo->prepare('SELECT id FROM usuarios WHERE id = :id LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id, rol, email FROM usuarios WHERE id = :id LIMIT 1');
         $stmt->execute([':id' => $userId]);
-        if (!$stmt->fetch()) {
+        $target = $stmt->fetch();
+        if (!$target) {
             error_response('Usuario no encontrado', 404);
         }
 
+        if ($target['rol'] === 'admin') {
+            ensure_not_last_admin($pdo);
+        }
+
         // Eliminar historial de intentos (no tiene FK)
-        $stmt = $pdo->prepare('DELETE FROM login_intentos WHERE email IN (SELECT email FROM usuarios WHERE id = :id)');
-        $stmt->execute([':id' => $userId]);
+        $stmt = $pdo->prepare('DELETE FROM login_intentos WHERE email = :e');
+        $stmt->execute([':e' => normalize_email($target['email'])]);
 
         $stmt = $pdo->prepare('DELETE FROM usuarios WHERE id = :id');
         $stmt->execute([':id' => $userId]);

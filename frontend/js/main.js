@@ -42,20 +42,21 @@ async function loadGuides() {
 }
 
 function renderGuides(guides, container) {
-    const grid = document.createElement('div');
-    grid.className = 'guides-grid';
+    // El contenedor (#guidesContainer) ya es .guides-grid: crear otro grid
+    // dentro anidaba dos rejillas y rompia el reparto de columnas.
+    const fragment = document.createDocumentFragment();
 
     guides.forEach((guide) => {
         const card = document.createElement('article');
         card.className = 'guide-card';
 
         const imgHtml = guide.image
-            ? `<img src="${Core.escapeHtml(guide.image)}" alt="${Core.escapeHtml(guide.game)}">`
+            ? `<img src="${Core.escapeHtml(guide.image)}" alt="${Core.escapeHtml(guide.game)}" loading="lazy">`
             : '';
 
         card.innerHTML = `
             ${imgHtml}
-            <h3><a href="pages/guide.html?id=${guide.id}">${Core.escapeHtml(guide.title)}</a></h3>
+            <h3><a href="pages/guide.html?id=${encodeURIComponent(guide.id)}">${Core.escapeHtml(guide.title)}</a></h3>
             <p>${Core.escapeHtml(guide.description || '')}</p>
             <div class="guide-meta">
                 <span class="guide-author">${Core.escapeHtml(guide.author)}</span>
@@ -63,10 +64,10 @@ function renderGuides(guides, container) {
                 <span class="guide-votes">&#9650; ${Core.compactNumber(guide.votes || 0)}</span>
             </div>
         `;
-        grid.appendChild(card);
+        fragment.appendChild(card);
     });
 
-    container.appendChild(grid);
+    container.appendChild(fragment);
 }
 
 /* ---------- Carga dinamica de posts ---------- */
