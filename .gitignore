@@ -1,0 +1,31 @@
+# Archivos de configuración
+.env
+config/local.php
+
+# Dependencias
+/vendor/
+/node_modules/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+error_log
+
+# Archivos temporales
+/tmp/
+/temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backups
+*.sql.gz
+*.zip
+*.tar.gz
