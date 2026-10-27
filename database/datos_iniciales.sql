@@ -1,4 +1,5 @@
 -- Datos iniciales para CoreTT
+CREATE DATABASE IF NOT EXISTS `corett_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `corett_db`;
 
 -- --------------------------------------------------------
