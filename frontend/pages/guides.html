@@ -8,10 +8,14 @@
     <link rel="stylesheet" href="../css/responsive.css">
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="container">
-            <div class="logo">CoreTT</div>
-            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">&#9776;</button>
+            <a href="../index.html" class="logo">CoreTT</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
             <ul class="nav-links" id="navLinks">
                 <li><a href="../index.html">Inicio</a></li>
                 <li><a href="guides.html">Guías</a></li>
@@ -27,7 +31,7 @@
         <section>
             <h2 class="section-title">Guías de la Comunidad</h2>
             <div class="alert alert-info">
-                Explora las guías de estrategia, lineups y análisis del meta. Vota las que te sirvan para que la comunidad las destaque.
+                🎮 Explora las guías de estrategia, lineups y análisis del meta. Vota las que te sirvan para que la comunidad las destaque.
             </div>
 
             <div class="filter-bar">
@@ -44,7 +48,9 @@
     </main>
 
     <footer class="footer">
-        <p>&copy; 2026 CoreTT. Todos los derechos reservados.</p>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year">2026</span> CoreTT. Todos los derechos reservados.</p>
+        </div>
     </footer>
 
     <!-- Modal de Login -->
@@ -53,10 +59,17 @@
             <span class="close" data-close="loginModal">&times;</span>
             <h2>Iniciar Sesión</h2>
             <form id="loginForm">
-                <input type="email" id="loginEmail" placeholder="Email" required>
-                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group password-wrapper">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                    <button type="button" class="password-toggle" aria-label="Mostrar contraseña">👁️</button>
+                </div>
                 <div id="loginError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Entrar</button>
+                <button type="submit" class="btn btn-primary btn-block-mobile">Entrar</button>
             </form>
             <p>¿No tienes cuenta? <a href="#" id="signupLink">Regístrate</a></p>
         </div>
@@ -68,33 +81,55 @@
             <span class="close" data-close="signupModal">&times;</span>
             <h2>Registrarse</h2>
             <form id="signupForm">
-                <input type="text" id="signupName" placeholder="Nombre de usuario" required>
-                <input type="email" id="signupEmail" placeholder="Email" required>
-                <input type="password" id="signupPassword" placeholder="Contraseña" required>
+                <div class="form-group">
+                    <label for="signupName">Nombre de usuario</label>
+                    <input type="text" id="signupName" placeholder="Nombre de usuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group password-wrapper">
+                    <label for="signupPassword">Contraseña</label>
+                    <input type="password" id="signupPassword" placeholder="Contraseña" required>
+                    <button type="button" class="password-toggle" aria-label="Mostrar contraseña">👁️</button>
+                </div>
                 <div id="signupError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Crear cuenta</button>
+                <button type="submit" class="btn btn-primary btn-block-mobile">Crear cuenta</button>
             </form>
             <p>¿Ya tienes cuenta? <a href="#" id="loginLink">Inicia sesión</a></p>
         </div>
     </div>
 
     <!-- Modal Nueva Guía -->
-    <div id="newGuideModal" class="modal">
+    <div id="newGuideModal" class="modal large">
         <div class="modal-content">
             <span class="close" data-close="newGuideModal">&times;</span>
             <h2>Publicar Nueva Guía</h2>
             <form id="newGuideForm">
-                <input type="text" id="guideTitle" placeholder="Título de la guía" required>
-                <select id="guideGame" required>
-                    <option value="">Selecciona el juego</option>
-                    <option value="League of Legends">League of Legends</option>
-                    <option value="Counter-Strike 2">Counter-Strike 2</option>
-                    <option value="Fortnite">Fortnite</option>
-                </select>
-                <textarea id="guideDescription" placeholder="Breve descripción" required></textarea>
-                <textarea id="guideContent" placeholder="Contenido completo de la guía" required></textarea>
+                <div class="form-group">
+                    <label for="guideTitle">Título de la guía</label>
+                    <input type="text" id="guideTitle" placeholder="Título de la guía" required>
+                </div>
+                <div class="form-group">
+                    <label for="guideGame">Juego</label>
+                    <select id="guideGame" required>
+                        <option value="">Selecciona el juego</option>
+                        <option value="League of Legends">League of Legends</option>
+                        <option value="Counter-Strike 2">Counter-Strike 2</option>
+                        <option value="Fortnite">Fortnite</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="guideDescription">Breve descripción</label>
+                    <textarea id="guideDescription" placeholder="Breve descripción de tu guía" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="guideContent">Contenido completo de la guía</label>
+                    <textarea id="guideContent" placeholder="Escribe aquí el contenido completo de tu guía..." required></textarea>
+                </div>
                 <div id="guideError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Publicar</button>
+                <button type="submit" class="btn btn-primary btn-block-mobile">Publicar</button>
             </form>
         </div>
     </div>
@@ -102,5 +137,29 @@
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/guides.js"></script>
+    <script>
+        // Año dinámico en el footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Efecto scroll en navbar
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Toggle mostrar/ocultar contraseña
+        document.querySelectorAll('.password-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const input = toggle.previousElementSibling;
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                toggle.textContent = type === 'password' ? '👁️' : '🙈';
+            });
+        });
+    </script>
 </body>
 </html>

@@ -98,8 +98,8 @@ function renderUsers(users) {
                         <td><strong>${escapeHtml(u.name)}</strong><div class="user-email">${escapeHtml(u.email)}</div></td>
                         <td>${u.role === 'admin' ? '<span class="badge">Admin</span>' : 'Usuario'}</td>
                         <td>${escapeHtml(u.rank)}</td>
-                        <td>${Number(u.guides) || 0}</td>
-                        <td>${Number(u.votes) || 0}</td>
+                        <td>${u.guides}</td>
+                        <td>${u.votes}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -126,10 +126,10 @@ function renderGuides(guides) {
                 ${guides.map((g) => `
                     <tr>
                         <td>${escapeHtml(g.title)}</td>
-                        <td><span class="badge ${escapeHtml(g.gameClass || '')}">${escapeHtml(g.game)}</span></td>
+                        <td><span class="badge ${escapeHtml(g.gameClass)}">${escapeHtml(g.game)}</span></td>
                         <td>${escapeHtml(g.author)}</td>
-                        <td>${Number(g.votes) || 0}</td>
-                        <td><button class="btn btn-danger btn-sm" data-del-guide="${Number(g.id)}">Eliminar</button></td>
+                        <td>${g.votes}</td>
+                        <td><button class="btn btn-danger btn-sm" data-del-guide="${g.id}">Eliminar</button></td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -139,12 +139,8 @@ function renderGuides(guides) {
     panel.querySelectorAll('[data-del-guide]').forEach((btn) => {
         btn.addEventListener('click', async () => {
             if (!confirm('¿Eliminar esta guía?')) return;
-            try {
-                await API.deleteGuide(Number(btn.dataset.delGuide));
-                loadTab('guides');
-            } catch (e) {
-                console.error('Error eliminando guía:', e);
-            }
+            await API.deleteGuide(Number(btn.dataset.delGuide));
+            loadTab('guides');
         });
     });
 }
@@ -170,8 +166,8 @@ function renderPosts(posts) {
                         <td>${escapeHtml(p.title)}</td>
                         <td>${escapeHtml(p.author)}</td>
                         <td>${escapeHtml(p.date)}</td>
-                        <td>${Number(p.replies) || 0}</td>
-                        <td><button class="btn btn-danger btn-sm" data-del-post="${Number(p.id)}">Eliminar</button></td>
+                        <td>${p.replies || 0}</td>
+                        <td><button class="btn btn-danger btn-sm" data-del-post="${p.id}">Eliminar</button></td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -181,12 +177,8 @@ function renderPosts(posts) {
     panel.querySelectorAll('[data-del-post]').forEach((btn) => {
         btn.addEventListener('click', async () => {
             if (!confirm('¿Eliminar este post?')) return;
-            try {
-                await API.deletePost(Number(btn.dataset.delPost));
-                loadTab('posts');
-            } catch (e) {
-                console.error('Error eliminando post:', e);
-            }
+            await API.deletePost(Number(btn.dataset.delPost));
+            loadTab('posts');
         });
     });
 }

@@ -5,21 +5,17 @@
  * para que el frontend siga funcionando de forma autónoma.
  */
 const API = (() => {
-    const BASE_URL = (() => {
-        // Funciona desde frontend/index.html y desde frontend/pages/*.html
-        return location.pathname.includes('/pages/') ? '../../backend/api/' : '../backend/api/';
-    })();
+    const BASE_URL = '../backend/api/';
     const API_AVAILABLE = false; // Cambiar a true cuando el backend esté listo
 
     /* ============================================
        Base de datos de demostración (en memoria)
        ============================================ */
 
-    const ASSET_BASE = location.pathname.includes('/pages/') ? '../assets/' : 'assets/';
     const GAME_IMAGES = {
-        'League of Legends': ASSET_BASE + 'League of Legends.png',
-        'Counter-Strike 2': ASSET_BASE + 'Counter Strike 2.png',
-        'Fortnite': ASSET_BASE + 'Fortnite.png'
+        'League of Legends': '../assets/League of Legends.png',
+        'Counter-Strike 2': '../assets/Counter Strike 2.png',
+        'Fortnite': '../assets/Fortnite.png'
     };
 
     const GAME_CLASS = {
@@ -157,8 +153,7 @@ const API = (() => {
         };
 
         if (authenticated) {
-            const auth = (typeof Auth !== 'undefined') ? Auth : null;
-            const token = auth ? auth.getToken() : null;
+            const token = Auth ? Auth.getToken() : null;
             if (token) {
                 options.headers['Authorization'] = 'Bearer ' + token;
             }
@@ -169,12 +164,7 @@ const API = (() => {
         }
 
         const response = await fetch(BASE_URL + endpoint, options);
-        let data = null;
-        try {
-            data = await response.json();
-        } catch (e) {
-            throw new Error('Respuesta no válida del servidor');
-        }
+        const data = await response.json();
 
         if (!response.ok) {
             throw new Error(data.error || 'Error en la petición');
@@ -197,6 +187,9 @@ const API = (() => {
 
         if (options.game && options.game !== 'Todos') {
             guides = guides.filter((g) => g.game === options.game);
+        }
+        if (options.game && options.game === 'Todos') {
+            guides = demoDB.guides;
         }
         if (options.search) {
             const q = options.search.toLowerCase();
@@ -236,12 +229,8 @@ const API = (() => {
             return request('guides.php?action=vote', 'POST', { id, vote }, true);
         }
         await delay(120);
-        const nid = Number(id);
-        if (vote !== 1 && vote !== -1) throw new Error('Voto inválido');
-        const guide = demoDB.guides.find((g) => g.id === nid);
-        if (!guide) throw new Error('Guía no encontrada');
-        session.votes[nid] = (session.votes[nid] || 0) + vote;
-        return { success: true, votes: guide.votes + session.votes[nid] };
+        session.votes[id] = (session.votes[id] || 0) + vote;
+        return { success: true, votes: demoDB.guides.find((g) => g.id === id).votes + session.votes[id] };
     }
 
     async function createGuide(data) {
@@ -249,10 +238,9 @@ const API = (() => {
             return request('guides.php', 'POST', data, true);
         }
         await delay(200);
-        const auth = (typeof Auth !== 'undefined') ? Auth : null;
-        const user = auth ? auth.getCurrentUser() : null;
+        const user = Auth ? Auth.getCurrentUser() : null;
         const newGuide = {
-            id: Date.now(),
+            id: demoDB.guides.length + 100,
             title: data.title,
             game: data.game,
             description: data.description,
@@ -283,7 +271,7 @@ const API = (() => {
             return request('forum.php');
         }
         await delay(200);
-        return [...session.createdPosts, ...demoDB.posts];
+        return [...demoDB.posts, ...session.createdPosts];
     }
 
     async function getPost(id) {
@@ -301,14 +289,12 @@ const API = (() => {
             return request('forum.php', 'POST', data, true);
         }
         await delay(200);
-        const auth = (typeof Auth !== 'undefined') ? Auth : null;
-        const user = auth ? auth.getCurrentUser() : null;
-        const body = String(data.body || '');
+        const user = Auth ? Auth.getCurrentUser() : null;
         const newPost = {
-            id: Date.now(),
+            id: demoDB.posts.length + session.createdPosts.length + 200,
             title: data.title,
-            body: body,
-            excerpt: body.slice(0, 120) + (body.length > 120 ? '...' : ''),
+            body: data.body,
+            excerpt: data.body.slice(0, 120) + (data.body.length > 120 ? '...' : ''),
             author: user ? user.name : 'Anónimo',
             date: new Date().toISOString().slice(0, 10),
             comments: [],
@@ -323,8 +309,7 @@ const API = (() => {
             return request('forum.php?action=comment', 'POST', { postId, text }, true);
         }
         await delay(120);
-        const auth = (typeof Auth !== 'undefined') ? Auth : null;
-        const user = auth ? auth.getCurrentUser() : null;
+        const user = Auth ? Auth.getCurrentUser() : null;
         const comment = {
             author: user ? user.name : 'Anónimo',
             date: new Date().toISOString().slice(0, 10),
@@ -379,8 +364,8 @@ const API = (() => {
 
         await delay(400);
 
-        // Cuenta admin de demo (exige password mínima, solo demo)
-        if (email.toLowerCase() === 'admin@corett.com' && password.length >= 4) {
+        // Cuenta admin de demo
+        if (email.toLowerCase() === 'admin@corett.com') {
             return {
                 success: true,
                 token: 'demo-admin-token',
@@ -428,16 +413,15 @@ const API = (() => {
             return request('users.php?action=profile', 'GET', null, true);
         }
         await delay(150);
-        const auth = (typeof Auth !== 'undefined') ? Auth : null;
-        const user = auth ? auth.getCurrentUser() : null;
+        const user = Auth ? Auth.getCurrentUser() : null;
         if (!user) throw new Error('No autenticado');
 
         const stats = {
             name: user.name,
             email: user.email,
             rank: user.rank || 'Sin rango',
-            guides: user.guides ?? demoDB.guides.filter((g) => g.author === user.name).length,
-            votes: user.votes ?? demoDB.guides.filter((g) => g.author === user.name).reduce((sum, g) => sum + g.votes, 0),
+            guides: user.guides || demoDB.guides.filter((g) => g.author === user.name).length,
+            votes: user.votes || demoDB.guides.filter((g) => g.author === user.name).reduce((sum, g) => sum + g.votes, 0),
             reputation: user.role === 'admin' ? 100 : '--'
         };
         return stats;

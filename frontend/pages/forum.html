@@ -8,10 +8,14 @@
     <link rel="stylesheet" href="../css/responsive.css">
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="container">
-            <div class="logo">CoreTT</div>
-            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">&#9776;</button>
+            <a href="../index.html" class="logo">CoreTT</a>
+            <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
             <ul class="nav-links" id="navLinks">
                 <li><a href="../index.html">Inicio</a></li>
                 <li><a href="guides.html">Guías</a></li>
@@ -25,7 +29,7 @@
 
     <main class="container">
         <section>
-            <div class="filter-bar" style="border:none; padding:0; margin-bottom:0;">
+            <div class="filter-bar" style="border:none; padding:0; margin-bottom:0; align-items:flex-start;">
                 <div>
                     <h2 class="section-title" id="forumTitle">Foro de Discusión</h2>
                 </div>
@@ -37,7 +41,9 @@
     </main>
 
     <footer class="footer">
-        <p>&copy; 2026 CoreTT. Todos los derechos reservados.</p>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year">2026</span> CoreTT. Todos los derechos reservados.</p>
+        </div>
     </footer>
 
     <!-- Modal de Login -->
@@ -46,10 +52,17 @@
             <span class="close" data-close="loginModal">&times;</span>
             <h2>Iniciar Sesión</h2>
             <form id="loginForm">
-                <input type="email" id="loginEmail" placeholder="Email" required>
-                <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group password-wrapper">
+                    <label for="loginPassword">Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="Contraseña" required>
+                    <button type="button" class="password-toggle" aria-label="Mostrar contraseña">👁️</button>
+                </div>
                 <div id="loginError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Entrar</button>
+                <button type="submit" class="btn btn-primary btn-block-mobile">Entrar</button>
             </form>
             <p>¿No tienes cuenta? <a href="#" id="signupLink">Regístrate</a></p>
         </div>
@@ -61,26 +74,42 @@
             <span class="close" data-close="signupModal">&times;</span>
             <h2>Registrarse</h2>
             <form id="signupForm">
-                <input type="text" id="signupName" placeholder="Nombre de usuario" required>
-                <input type="email" id="signupEmail" placeholder="Email" required>
-                <input type="password" id="signupPassword" placeholder="Contraseña" required>
+                <div class="form-group">
+                    <label for="signupName">Nombre de usuario</label>
+                    <input type="text" id="signupName" placeholder="Nombre de usuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group password-wrapper">
+                    <label for="signupPassword">Contraseña</label>
+                    <input type="password" id="signupPassword" placeholder="Contraseña" required>
+                    <button type="button" class="password-toggle" aria-label="Mostrar contraseña">👁️</button>
+                </div>
                 <div id="signupError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Crear cuenta</button>
+                <button type="submit" class="btn btn-primary btn-block-mobile">Crear cuenta</button>
             </form>
             <p>¿Ya tienes cuenta? <a href="#" id="loginLink">Inicia sesión</a></p>
         </div>
     </div>
 
     <!-- Modal Nuevo Post -->
-    <div id="newPostModal" class="modal">
+    <div id="newPostModal" class="modal large">
         <div class="modal-content">
             <span class="close" data-close="newPostModal">&times;</span>
             <h2>Crear Nuevo Post</h2>
             <form id="newPostForm">
-                <input type="text" id="postTitle" placeholder="Título del post" required>
-                <textarea id="postBody" placeholder="Contenido de tu publicación" required></textarea>
+                <div class="form-group">
+                    <label for="postTitle">Título del post</label>
+                    <input type="text" id="postTitle" placeholder="Título del post" required>
+                </div>
+                <div class="form-group">
+                    <label for="postBody">Contenido de tu publicación</label>
+                    <textarea id="postBody" placeholder="Escribe aquí tu publicación..." required></textarea>
+                </div>
                 <div id="postError" class="form-error"></div>
-                <button type="submit" class="btn btn-primary">Publicar</button>
+                <button type="submit" class="btn btn-primary btn-block-mobile">Publicar</button>
             </form>
         </div>
     </div>
@@ -88,5 +117,29 @@
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/forum.js"></script>
+    <script>
+        // Año dinámico en el footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Efecto scroll en navbar
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Toggle mostrar/ocultar contraseña
+        document.querySelectorAll('.password-toggle').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const input = toggle.previousElementSibling;
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                toggle.textContent = type === 'password' ? '👁️' : '🙈';
+            });
+        });
+    </script>
 </body>
 </html>

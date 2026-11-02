@@ -1,22 +1,29 @@
 <?php
-// CoreTT - Validaciones mínimas de servidor
-function validEmail(string $email): bool {
-    return filter_var(strtolower(trim($email)), FILTER_VALIDATE_EMAIL) !== false;
+/**
+ * Validaciones CoreTT
+ */
+
+function validateEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
 }
 
-function validPassword(string $pass): bool {
-    return mb_strlen($pass) >= 8;
+function validatePassword($password) {
+    // Mínimo 4 caracteres
+    return strlen($password) >= 4;
 }
 
-function validId($id): bool {
-    return filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) !== false;
+function validateUsername($username) {
+    // Solo letras, números, guiones y guiones bajos, 3-50 caracteres
+    return preg_match('/^[a-zA-Z0-9_-]{3,50}$/', $username);
 }
 
-function validGame(string $game, array $allowed): bool {
-    return in_array($game, $allowed, true);
+function validateRequired($data, $fields) {
+    $errors = array();
+    foreach ($fields as $field) {
+        if (!isset($data[$field]) || trim($data[$field]) === '') {
+            $errors[] = "El campo $field es requerido";
+        }
+    }
+    return $errors;
 }
-
-function validText(string $text, int $min, int $max): bool {
-    $len = mb_strlen(trim($text));
-    return $len >= $min && $len <= $max;
-}
+?>

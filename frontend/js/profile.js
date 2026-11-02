@@ -43,9 +43,8 @@ function renderProfile(profile) {
     const content = document.getElementById('profileContent');
     if (!content) return;
 
-    const initial = ((profile.name || '?').trim().charAt(0) || '?').toUpperCase();
-    const currentUser = (typeof Auth !== 'undefined' && Auth.getCurrentUser) ? Auth.getCurrentUser() : null;
-    const isAdmin = currentUser && currentUser.role === 'admin';
+    const initial = (profile.name || '?').charAt(0).toUpperCase();
+    const isAdmin = Auth.getCurrentUser() && Auth.getCurrentUser().role === 'admin';
 
     content.innerHTML = `
         <h2 class="section-title">Mi Perfil</h2>
@@ -54,21 +53,21 @@ function renderProfile(profile) {
             <div class="avatar">${escapeHtml(initial)}</div>
             <h2>${escapeHtml(profile.name)}</h2>
             <p class="profile-email">${escapeHtml(profile.email)}</p>
-            <span class="badge">${escapeHtml(profile.rank || 'Sin rango')}</span>
+            <span class="badge ${isAdmin ? '' : ''}">${escapeHtml(profile.rank || 'Sin rango')}</span>
             ${isAdmin ? '<span class="badge mt-1">Admin</span>' : ''}
         </div>
 
         <div class="profile-stats">
             <div class="stat-item">
-                <span class="stat-number">${escapeHtml(String(profile.guides ?? 0))}</span>
+                <span class="stat-number">${escapeHtml(profile.guides ?? 0)}</span>
                 <span class="stat-label">Guías publicadas</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number">${escapeHtml(String(profile.votes ?? 0))}</span>
+                <span class="stat-number">${escapeHtml(profile.votes ?? 0)}</span>
                 <span class="stat-label">Votos recibidos</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number">${escapeHtml(String(profile.reputation ?? '--'))}</span>
+                <span class="stat-number">${escapeHtml(profile.reputation ?? '--')}</span>
                 <span class="stat-label">Reputación</span>
             </div>
         </div>

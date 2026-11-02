@@ -62,11 +62,9 @@ const Auth = (() => {
         const modal = document.getElementById(id);
         if (modal) {
             modal.style.display = 'none';
-            // Limpiar errores anteriores y resetear formulario
+            // Limpiar errores anteriores
             const error = modal.querySelector('.form-error');
             if (error) error.textContent = '';
-            const form = modal.querySelector('form');
-            if (form) form.reset();
         }
     }
 
@@ -91,20 +89,16 @@ const Auth = (() => {
         const signupForm = document.getElementById('signupForm');
 
         // Abrir modal de login
-        if (loginBtn) {
-            loginBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                openModal('loginModal');
-            });
-        }
+        loginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal('loginModal');
+        });
 
         // Cerrar sesión
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                logout();
-            });
-        }
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            logout();
+        });
 
         // Cambiar entre modales
         const signupLink = document.getElementById('signupLink');
@@ -130,32 +124,18 @@ const Auth = (() => {
             signupForm.addEventListener('submit', handleSignup);
         }
 
-        // Cerrar modales (X, o clic fuera) - una sola vez
+        // Cerrar modales (X, o clic fuera)
         document.querySelectorAll('.close').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const target = btn.getAttribute('data-close') || 'loginModal';
                 closeModal(target);
             });
         });
-        if (!window.__corettModalOutsideBound) {
-            window.addEventListener('click', (e) => {
-                if (e.target.classList && e.target.classList.contains('modal')) {
-                    closeModal(e.target.id);
-                }
-            });
-            window.__corettModalOutsideBound = true;
-        }
-        // Cerrar con Escape
-        if (!window.__corettModalEscBound) {
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    document.querySelectorAll('.modal').forEach((m) => {
-                        if (m.style.display === 'block') closeModal(m.id);
-                    });
-                }
-            });
-            window.__corettModalEscBound = true;
-        }
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target.id);
+            }
+        });
     }
 
     function showError(form, message) {
@@ -169,31 +149,20 @@ const Auth = (() => {
         e.preventDefault();
         const email = document.getElementById('loginEmail').value.trim();
         const password = document.getElementById('loginPassword').value;
-        const submitBtn = e.target.querySelector('button[type="submit"]');
 
         try {
             showError(e.target, '');
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                showError(e.target, 'Email no válido');
-                return;
-            }
-            if (submitBtn) submitBtn.disabled = true;
             const result = await API.login(email, password);
 
             if (result.success) {
                 setSession(result.token, result.user);
                 closeModal('loginModal');
                 e.target.reset();
-                // Refrescar perfil/admin si estamos en esas páginas
-                if (typeof loadProfile === 'function' && document.getElementById('profileContent')) loadProfile();
-                if (typeof guardAdmin === 'function' && document.getElementById('adminContent')) guardAdmin();
             } else {
                 showError(e.target, result.message || 'No se pudo iniciar sesión');
             }
         } catch (err) {
             showError(e.target, err.message);
-        } finally {
-            if (submitBtn) submitBtn.disabled = false;
         }
     }
 
@@ -202,36 +171,20 @@ const Auth = (() => {
         const name = document.getElementById('signupName').value.trim();
         const email = document.getElementById('signupEmail').value.trim();
         const password = document.getElementById('signupPassword').value;
-        const submitBtn = e.target.querySelector('button[type="submit"]');
 
         try {
             showError(e.target, '');
-            if (name.length < 3) {
-                showError(e.target, 'El nombre debe tener al menos 3 caracteres');
-                return;
-            }
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                showError(e.target, 'Email no válido');
-                return;
-            }
-            if (password.length < 4) {
-                showError(e.target, 'La contraseña debe tener al menos 4 caracteres');
-                return;
-            }
-            if (submitBtn) submitBtn.disabled = true;
             const result = await API.register(name, email, password);
 
             if (result.success) {
                 closeModal('signupModal');
                 e.target.reset();
-                openModal('loginModal');
+                alert(result.message || 'Cuenta creada correctamente. Ahora puedes iniciar sesión.');
             } else {
                 showError(e.target, result.message || 'No se pudo crear la cuenta');
             }
         } catch (err) {
             showError(e.target, err.message);
-        } finally {
-            if (submitBtn) submitBtn.disabled = false;
         }
     }
 
@@ -247,11 +200,6 @@ const Auth = (() => {
         localStorage.removeItem(USER_KEY);
         currentUser = null;
         updateUI();
-        // Limpiar vistas protegidas sin recarga completa
-        const profile = document.getElementById('profileContent');
-        if (profile && typeof loadProfile === 'function') loadProfile();
-        const admin = document.getElementById('adminContent');
-        if (admin && typeof guardAdmin === 'function') guardAdmin();
     }
 
     function updateUI() {
