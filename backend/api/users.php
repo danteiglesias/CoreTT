@@ -166,9 +166,26 @@ switch ($method) {
                 sendError('Error al crear la cuenta. Revisa los permisos del usuario de la base de datos.', 500);
             }
 
+            $newId = (int) $db->lastInsertId();
+            if ($newId <= 0) {
+                error_log('CoreTT register: lastInsertId() devolvió 0. Posible falta de permisos INSERT o auto_increment.');
+                sendError('La cuenta no se pudo guardar en la base de datos. Revisa permisos INSERT y auto_increment.', 500);
+            }
+
+            // Verificar que el registro realmente existe
+            $verifyStmt = $db->prepare('SELECT id, email FROM usuarios WHERE id = :id');
+            $verifyStmt->bindValue(':id', $newId, PDO::PARAM_INT);
+            $verifyStmt->execute();
+            $saved = $verifyStmt->fetch();
+            if (!$saved) {
+                error_log('CoreTT register: el usuario insertado no se pudo releer (id=' . $newId . ').');
+                sendError('El usuario no se persistió en la base de datos. Revisa la base de datos y permisos.', 500);
+            }
+
             sendResponse(array(
                 "success" => true,
-                "message" => "Cuenta creada correctamente. Ahora puedes iniciar sesión."
+                "message" => "Cuenta creada correctamente. Ahora puedes iniciar sesión.",
+                "user_id" => $newId
             ));
         } else {
             sendError('Acción no válida');
