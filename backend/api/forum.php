@@ -12,38 +12,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-require_once '../includes/functions.php';
-require_once '../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/validations.php';
 
-$db = getDB();
+try {
+    $db = getDB();
+} catch (Throwable $e) {
+    sendError('No se pudo conectar a la base de datos. Revisa el archivo .env.', 500);
+}
 $method = $_SERVER['REQUEST_METHOD'];
 $action = isset($_GET['action']) ? $_GET['action'] : '';
+
+/**
+ * Recorta texto UTF-8 sin cortar caracteres multibyte.
+ */
+function excerptText($text, $length = 120) {
+    $text = trim(strip_tags((string) $text));
+    if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+        if (mb_strlen($text, 'UTF-8') > $length) {
+            return mb_substr($text, 0, $length, 'UTF-8') . '...';
+        }
+        return $text;
+    }
+    return strlen($text) > $length ? substr($text, 0, $length) . '...' : $text;
+}
 
 switch ($method) {
     case 'GET':
         if (isset($_GET['id'])) {
             // Obtener post específico con comentarios
             $id = intval($_GET['id']);
-            $query = "SELECT p.id, p.titulo as title, p.contenido as body, u.nombre_usuario as author, 
+            $query = "SELECT p.id, p.titulo as title, p.contenido as body, u.nombre_usuario as author,
                              DATE(p.fecha_creacion) as date, p.vistas
                       FROM foro_posts p
                       JOIN usuarios u ON p.usuario_id = u.id
                       WHERE p.id = :id AND p.activo = 1";
             $stmt = $db->prepare($query);
-            $stmt->bindParam(':id', $id);
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
             $post = $stmt->fetch();
-            
+
             if (!$post) {
                 sendError('Post no encontrado', 404);
             }
-            
+
             // Incrementar vistas
             $updateViews = "UPDATE foro_posts SET vistas = vistas + 1 WHERE id = :id";
             $stmtViews = $db->prepare($updateViews);
-            $stmtViews->bindParam(':id', $id);
+            $stmtViews->bindValue(':id', $id, PDO::PARAM_INT);
             $stmtViews->execute();
-            
+
+            if (isset($post['vistas'])) {
+                $post['vistas'] = (int) $post['vistas'] + 1;
+            }
+
             // Obtener comentarios
             $commentQuery = "SELECT c.id, c.contenido as text, u.nombre_usuario as author, DATE(c.fecha_creacion) as date
                             FROM foro_comentarios c
@@ -51,20 +74,19 @@ switch ($method) {
                             WHERE c.post_id = :post_id AND c.activo = 1
                             ORDER BY c.fecha_creacion ASC";
             $stmtComments = $db->prepare($commentQuery);
-            $stmtComments->bindParam(':post_id', $id);
+            $stmtComments->bindValue(':post_id', $id, PDO::PARAM_INT);
             $stmtComments->execute();
             $comments = $stmtComments->fetchAll();
-            
+
             $post['comments'] = $comments;
             $post['replies'] = count($comments);
-            
+
             sendResponse($post);
         } else {
             // Listar posts
-            $query = "SELECT p.id, p.titulo as title, p.contenido as body, u.nombre_usuario as author, 
+            $query = "SELECT p.id, p.titulo as title, p.contenido as body, u.nombre_usuario as author,
                              DATE(p.fecha_creacion) as date, p.fijado,
-                             (SELECT COUNT(*) FROM foro_comentarios WHERE post_id = p.id AND activo = 1) as replies,
-                             LEFT(p.contenido, 120) as excerpt
+                             (SELECT COUNT(*) FROM foro_comentarios WHERE post_id = p.id AND activo = 1) as replies
                       FROM foro_posts p
                       JOIN usuarios u ON p.usuario_id = u.id
                       WHERE p.activo = 1
@@ -72,54 +94,51 @@ switch ($method) {
             $stmt = $db->prepare($query);
             $stmt->execute();
             $posts = $stmt->fetchAll();
-            
+
             // Procesar excerpt
             foreach ($posts as $key => $post) {
-                if (strlen($post['body']) > 120) {
-                    $posts[$key]['excerpt'] = substr(strip_tags($post['body']), 0, 120) . '...';
-                } else {
-                    $posts[$key]['excerpt'] = strip_tags($post['body']);
-                }
+                $posts[$key]['excerpt'] = excerptText($post['body']);
+                $posts[$key]['replies'] = (int) $post['replies'];
                 unset($posts[$key]['body']);
             }
-            
+
             sendResponse($posts);
         }
         break;
-        
+
     case 'POST':
         if ($action === 'comment') {
             // Añadir comentario
             $user = requireAuth();
             $data = getJsonInput();
-            
+
             if (!isset($data['postId']) || !isset($data['text'])) {
                 sendError('ID del post y comentario son requeridos');
             }
-            
+
             $postId = intval($data['postId']);
             $text = sanitize($data['text']);
-            
-            if (empty($text)) {
+
+            if ($text === '') {
                 sendError('El comentario no puede estar vacío');
             }
-            
+
             // Verificar que el post existe
             $checkPost = "SELECT id FROM foro_posts WHERE id = :id AND activo = 1 AND cerrado = 0";
             $stmtCheck = $db->prepare($checkPost);
-            $stmtCheck->bindParam(':id', $postId);
+            $stmtCheck->bindValue(':id', $postId, PDO::PARAM_INT);
             $stmtCheck->execute();
-            
-            if ($stmtCheck->rowCount() == 0) {
+
+            if (!$stmtCheck->fetch()) {
                 sendError('Post no encontrado o cerrado', 404);
             }
-            
+
             $query = "INSERT INTO foro_comentarios (post_id, usuario_id, contenido) VALUES (:post_id, :usuario_id, :contenido)";
             $stmt = $db->prepare($query);
-            $stmt->bindParam(':post_id', $postId);
-            $stmt->bindParam(':usuario_id', $user['id']);
-            $stmt->bindParam(':contenido', $text);
-            
+            $stmt->bindValue(':post_id', $postId, PDO::PARAM_INT);
+            $stmt->bindValue(':usuario_id', (int) $user['id'], PDO::PARAM_INT);
+            $stmt->bindValue(':contenido', $text);
+
             if ($stmt->execute()) {
                 sendResponse(array(
                     "success" => true,
@@ -136,23 +155,27 @@ switch ($method) {
             // Crear post
             $user = requireAuth();
             $data = getJsonInput();
-            
+
             $errors = validateRequired($data, array('title', 'body'));
             if (!empty($errors)) {
                 sendError(implode(', ', $errors));
             }
-            
+
             $titulo = sanitize($data['title']);
-            $contenido = $data['body'];
-            
+            $contenido = trim((string) $data['body']);
+
+            if ($titulo === '' || $contenido === '') {
+                sendError('El título y el contenido no pueden estar vacíos');
+            }
+
             $query = "INSERT INTO foro_posts (usuario_id, titulo, contenido) VALUES (:usuario_id, :titulo, :contenido)";
             $stmt = $db->prepare($query);
-            $stmt->bindParam(':usuario_id', $user['id']);
-            $stmt->bindParam(':titulo', $titulo);
-            $stmt->bindParam(':contenido', $contenido);
-            
+            $stmt->bindValue(':usuario_id', (int) $user['id'], PDO::PARAM_INT);
+            $stmt->bindValue(':titulo', $titulo);
+            $stmt->bindValue(':contenido', $contenido);
+
             if ($stmt->execute()) {
-                $postId = $db->lastInsertId();
+                $postId = (int) $db->lastInsertId();
                 sendResponse(array(
                     "success" => true,
                     "post" => array(
@@ -170,41 +193,40 @@ switch ($method) {
             }
         }
         break;
-        
+
     case 'DELETE':
         $user = requireAuth();
         if (!isset($_GET['id'])) {
             sendError('ID requerido');
         }
         $id = intval($_GET['id']);
-        
+
         $check = "SELECT usuario_id FROM foro_posts WHERE id = :id";
         $stmtCheck = $db->prepare($check);
-        $stmtCheck->bindParam(':id', $id);
+        $stmtCheck->bindValue(':id', $id, PDO::PARAM_INT);
         $stmtCheck->execute();
         $post = $stmtCheck->fetch();
-        
+
         if (!$post) {
             sendError('Post no encontrado', 404);
         }
-        
-        if ($post['usuario_id'] != $user['id'] && $user['rol'] !== 'admin' && $user['rol'] !== 'moderador') {
+
+        if ((int) $post['usuario_id'] !== (int) $user['id'] && $user['rol'] !== 'admin' && $user['rol'] !== 'moderador') {
             sendError('No autorizado', 403);
         }
-        
+
         $query = "UPDATE foro_posts SET activo = 0 WHERE id = :id";
         $stmt = $db->prepare($query);
-        $stmt->bindParam(':id', $id);
-        
+        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+
         if ($stmt->execute()) {
             sendResponse(array("success" => true));
         } else {
             sendError('Error al eliminar el post');
         }
         break;
-        
+
     default:
         sendError('Método no permitido', 405);
         break;
 }
-?>

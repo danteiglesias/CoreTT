@@ -8,14 +8,19 @@ const Auth = (() => {
     const USER_KEY = 'corett_user';
 
     function init() {
-        // Cargar sesión guardada
+        // Cargar sesión guardada. Sin token la sesión no sirve para la API.
         const savedUser = localStorage.getItem(USER_KEY);
-        if (savedUser) {
+        const savedToken = getToken();
+
+        if (savedUser && savedToken) {
             try {
                 currentUser = JSON.parse(savedUser);
             } catch (e) {
                 currentUser = null;
             }
+        } else if (savedUser && !savedToken) {
+            localStorage.removeItem(USER_KEY);
+            currentUser = null;
         }
 
         bindNavbar();
@@ -77,7 +82,7 @@ const Auth = (() => {
     }
 
     function isLoggedIn() {
-        return currentUser !== null;
+        return currentUser !== null && !!getToken();
     }
 
     function bindModalEvents() {

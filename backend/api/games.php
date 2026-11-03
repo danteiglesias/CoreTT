@@ -12,9 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-require_once '../includes/functions.php';
+require_once __DIR__ . '/../includes/functions.php';
 
-$db = getDB();
+try {
+    $db = getDB();
+} catch (Throwable $e) {
+    sendError('No se pudo conectar a la base de datos. Revisa el archivo .env.', 500);
+}
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {

@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-require_once 'config/database.php';
+require_once __DIR__ . '/config/database.php';
 
 // Respuesta básica
 echo json_encode(array(

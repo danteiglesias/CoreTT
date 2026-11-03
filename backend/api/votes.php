@@ -12,10 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit(0);
 }
 
-require_once '../includes/functions.php';
-require_once '../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/auth.php';
 
-$db = getDB();
+try {
+    $db = getDB();
+} catch (Throwable $e) {
+    sendError('No se pudo conectar a la base de datos. Revisa el archivo .env.', 500);
+}
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
@@ -25,8 +29,8 @@ if ($method === 'GET') {
     if ($guiaId) {
         $query = "SELECT tipo_voto FROM votos_guias WHERE guia_id = :guia_id AND usuario_id = :usuario_id";
         $stmt = $db->prepare($query);
-        $stmt->bindParam(':guia_id', $guiaId);
-        $stmt->bindParam(':usuario_id', $user['id']);
+        $stmt->bindValue(':guia_id', $guiaId, PDO::PARAM_INT);
+        $stmt->bindValue(':usuario_id', (int) $user['id'], PDO::PARAM_INT);
         $stmt->execute();
         $vote = $stmt->fetch();
         

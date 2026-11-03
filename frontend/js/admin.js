@@ -99,7 +99,7 @@ function renderUsers(users) {
                         <td>${u.role === 'admin' ? '<span class="badge">Admin</span>' : 'Usuario'}</td>
                         <td>${escapeHtml(u.rank)}</td>
                         <td>${u.guides}</td>
-                        <td>${u.votes}</td>
+                        <td>${u.reputation ?? u.reputacion ?? 0}</td>
                     </tr>
                 `).join('')}
             </tbody>

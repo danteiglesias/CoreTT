@@ -31,4 +31,3 @@ function requireModerator() {
     }
     return $user;
 }
-?>

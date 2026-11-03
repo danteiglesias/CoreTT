@@ -40,8 +40,11 @@ function renderGuides(guides) {
         const card = document.createElement('article');
         card.className = 'guide-card';
 
-        card.innerHTML = `
-            <img src="${escapeHtml(guide.image)}" alt="${escapeHtml(guide.game)}">
+        const imageHtml = guide.image
+        ? `<img src="${escapeHtml(guide.image)}" alt="${escapeHtml(guide.game)}">`
+        : '';
+    card.innerHTML = `
+            ${imageHtml}
             <span class="badge ${escapeHtml(guide.gameClass)}">${escapeHtml(guide.game)}</span>
             <h3>${escapeHtml(guide.title)}</h3>
             <p>${escapeHtml(guide.description || '')}</p>
