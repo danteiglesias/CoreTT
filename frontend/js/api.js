@@ -152,9 +152,11 @@ const API = (() => {
         }
 
         if (data === null) {
+            const apiUrl = new URL(BASE_URL, window.location.href);
+            const diagnosticUrl = new URL('../diagnostico.php?format=html', apiUrl).toString();
             throw new Error(
                 'El backend devolvió una respuesta que no es JSON. ' +
-                'Abre ' + BASE_URL + 'diagnostico.php?format=html para revisar la configuración.'
+                'Abre ' + diagnosticUrl + ' para revisar la configuración.'
             );
         }
 

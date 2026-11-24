@@ -47,17 +47,27 @@ if (!$mbstring) {
 
 // --- Archivo .env ----------------------------------------------------------
 $envPath = is_string($envFile) ? $envFile : '';
-addCheck($checks, 'Archivo .env', $envPath !== '', $envPath !== '' ? $envPath : 'No encontrado');
-if ($envPath === '') {
+if ($envPath !== '') {
+    addCheck($checks, 'Configuración de entorno', true, $envPath);
+} else {
+    $hasEnvironmentConfig = trim((string) corett_env_first(array('DB_HOST', 'MYSQL_HOST', 'DATABASE_HOST', 'DB_HOSTNAME'), '')) !== ''
+        && trim((string) corett_env_first(array('DB_NAME', 'MYSQL_DATABASE', 'DATABASE_NAME', 'DB_DATABASE'), '')) !== ''
+        && trim((string) corett_env_first(array('DB_USER', 'MYSQL_USER', 'DATABASE_USER', 'DB_USERNAME', 'MYSQL_USERNAME'), '')) !== '';
+    addCheck($checks, 'Configuración de entorno', $hasEnvironmentConfig, $hasEnvironmentConfig
+        ? 'Variables DB_* definidas por el servidor'
+        : 'No hay archivo .env ni variables DB_* configuradas');
+}
+if ($envPath === '' && !$hasEnvironmentConfig) {
     $problems[] = 'No existe .env. Copia .env.example a .env en la raíz del proyecto y escribe los datos reales de MySQL.';
 }
 
+$dbConfig = corett_database_config();
 $config = array(
-    'DB_HOST' => (string) corett_env_first(array('DB_HOST', 'MYSQL_HOST', 'DATABASE_HOST', 'DB_HOSTNAME'), 'localhost'),
-    'DB_PORT' => (string) corett_env_first(array('DB_PORT', 'MYSQL_PORT', 'DATABASE_PORT'), '3306'),
-    'DB_NAME' => (string) corett_env_first(array('DB_NAME', 'MYSQL_DATABASE', 'DATABASE_NAME', 'DB_DATABASE'), 'corett_db'),
-    'DB_USER' => (string) corett_env_first(array('DB_USER', 'MYSQL_USER', 'DATABASE_USER', 'DB_USERNAME', 'MYSQL_USERNAME'), 'root'),
-    'DB_PASS' => corett_env_first(array('DB_PASS', 'DB_PASSWORD', 'MYSQL_PASSWORD', 'DATABASE_PASSWORD', 'MYSQL_ROOT_PASSWORD'), '') !== '' ? '(definida)' : '(vacía)',
+    'DB_HOST' => $dbConfig['host'],
+    'DB_PORT' => $dbConfig['port'],
+    'DB_NAME' => $dbConfig['name'],
+    'DB_USER' => $dbConfig['user'],
+    'DB_PASS' => $dbConfig['password'] !== '' ? '(definida)' : '(vacía)',
     'APP_DEBUG' => corett_debug_enabled() ? 'true' : 'false',
     'SECRET_KEY' => (string) corett_env_first(array('SECRET_KEY'), '') !== '' && corett_env_first(array('SECRET_KEY'), '') !== 'corett_secret_key_change_in_production'
         ? '(personalizada)'
@@ -70,11 +80,11 @@ if ($config['SECRET_KEY'] === '(valor por defecto: cámbiala)') {
 
 // --- Conexión a la base de datos ------------------------------------------
 $db = null;
-$dsn = 'mysql:host=' . $config['DB_HOST'] . ';port=' . $config['DB_PORT']
-     . ';dbname=' . $config['DB_NAME'] . ';charset=' . (string) corett_env('DB_CHARSET', 'utf8mb4');
+$dsn = 'mysql:host=' . $dbConfig['host'] . ';port=' . $dbConfig['port']
+     . ';dbname=' . $dbConfig['name'] . ';charset=' . $dbConfig['charset'];
 
 try {
-    $db = new PDO($dsn, $config['DB_USER'], (string) corett_env_first(array('DB_PASS', 'DB_PASSWORD', 'MYSQL_PASSWORD', 'DATABASE_PASSWORD', 'MYSQL_ROOT_PASSWORD'), ''), array(
+    $db = new PDO($dsn, $dbConfig['user'], $dbConfig['password'], array(
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ));

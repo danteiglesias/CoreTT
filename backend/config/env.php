@@ -166,6 +166,36 @@ function corett_env_first(array $keys, $default = null) {
 }
 
 /**
+ * Devuelve la configuración de MySQL usada por la aplicación y el diagnóstico.
+ *
+ * @return array
+ */
+function corett_database_config() {
+    corett_load_environment();
+
+    $config = array(
+        'host' => (string) corett_env_first(array('DB_HOST', 'MYSQL_HOST', 'DATABASE_HOST', 'DB_HOSTNAME'), 'localhost'),
+        'port' => (string) corett_env_first(array('DB_PORT', 'MYSQL_PORT', 'DATABASE_PORT'), '3306'),
+        'name' => (string) corett_env_first(array('DB_NAME', 'MYSQL_DATABASE', 'DATABASE_NAME', 'DB_DATABASE'), 'corett_db'),
+        'user' => (string) corett_env_first(array('DB_USER', 'MYSQL_USER', 'DATABASE_USER', 'DB_USERNAME', 'MYSQL_USERNAME'), 'root'),
+        'password' => (string) corett_env_first(array('DB_PASS', 'DB_PASSWORD', 'MYSQL_PASSWORD', 'DATABASE_PASSWORD', 'MYSQL_ROOT_PASSWORD'), ''),
+        'charset' => (string) corett_env_first(array('DB_CHARSET', 'MYSQL_CHARSET', 'DATABASE_CHARSET'), 'utf8mb4'),
+    );
+
+    if ($config['host'] === '') {
+        $config['host'] = 'localhost';
+    }
+    if ($config['port'] === '') {
+        $config['port'] = '3306';
+    }
+    if ($config['charset'] === '') {
+        $config['charset'] = 'utf8mb4';
+    }
+
+    return $config;
+}
+
+/**
  * Indica si el modo depuración está activo.
  *
  * @return bool
